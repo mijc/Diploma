@@ -1,0 +1,2563 @@
+
+elastix is started at Fri Feb  4 13:37:55 2011.
+
+elastix runs at: Mike-Modos-Mac-Pro.local
+  Mac OS X 10.6.6 (x64), 10J567
+  with 32768 MB memory, and 12 cores @ 2536 MHz.
+-------------------------------------------------------------------------
+
+Running elastix with parameter file 0: "parameters_BSpline.txt".
+
+Current time: Fri Feb  4 13:37:55 2011.
+Reading the elastix parameters from file ...
+
+Installing all components.
+InstallingComponents was successful.
+
+ELASTIX version: 4.400
+Command line options from ElastixBase:
+-f        fixed.mhd
+-m        moving.mhd
+-fMask    unspecified, so no fixed mask used
+-mMask    unspecified, so no moving mask used
+-out      /Users/maikstille/Documents/Projects/elastix/elastix_example_v4/
+-p        parameters_BSpline.txt
+-threads  unspecified, so all available threads are used
+Command line options from TransformBase:
+-t0       unspecified, so no initial transform used
+
+=============== start of ParameterFile: parameters_BSpline.txt ===============
+// Example parameter file for B-spline registration
+// C-style comments: //
+
+// The internal pixel type, used for internal computations
+// Leave to float in general. 
+// NB: this is not the type of the input images! The pixel 
+// type of the input images is automatically read from the 
+// images themselves.
+// This setting can be changed to "short" to save some memory
+// in case of very large 3D images.
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+
+// The dimensions of the fixed and moving image
+// NB: This has to be specified by the user. The dimension of
+// the images is currently NOT read from the images.
+// Also note that some other settings may have to specified
+// for each dimension separately.
+(FixedImageDimension 2)
+(MovingImageDimension 2)
+
+// Specify whether you want to take into account the so-called
+// direction cosines of the images. Recommended: true.
+// In some cases, the direction cosines of the image are corrupt,
+// due to image format conversions for example. In that case, you 
+// may want to set this option to "false".
+(UseDirectionCosines "true")
+
+// **************** Main Components **************************
+
+// The following components should usually be left as they are:
+(Registration "MultiResolutionRegistration")
+(Interpolator "BSplineInterpolator")
+(ResampleInterpolator "FinalBSplineInterpolator")
+(Resampler "DefaultResampler")
+
+// These may be changed to Fixed/MovingSmoothingImagePyramid.
+// See the manual.
+(FixedImagePyramid "FixedRecursiveImagePyramid")
+(MovingImagePyramid "MovingRecursiveImagePyramid")
+
+// The following components are most important:
+// The optimizer AdaptiveStochasticGradientDescent (ASGD) works
+// quite ok in general. The Transform and Metric are important
+// and need to be chosen careful for each application. See manual.
+(Optimizer "AdaptiveStochasticGradientDescent")
+(Transform "BSplineTransform")
+(Metric "AdvancedMattesMutualInformation")
+
+// ***************** Transformation **************************
+
+// The control point spacing of the bspline transformation in 
+// the finest resolution level. Can be specified for each 
+// dimension differently. Unit: mm.
+// The lower this value, the more flexible the deformation.
+// Low values may improve the accuracy, but may also cause
+// unrealistic deformations. This is a very important setting!
+// We recommend tuning it for every specific application. It is
+// difficult to come up with a good 'default' value.
+(FinalGridSpacingInPhysicalUnits 16)
+
+// Alternatively, the grid spacing can be specified in voxel units.
+// To do that, uncomment the following line and comment/remove
+// the FinalGridSpacingInPhysicalUnits definition.
+//(FinalGridSpacingInVoxels 16)
+
+// By default the grid spacing is halved after every resolution,
+// such that the final grid spacing is obtained in the last 
+// resolution level. You can also specify your own schedule,
+// if you uncomment the following line:
+//(GridSpacingSchedule 4.0 4.0 2.0 1.0)
+// This setting can also be supplied per dimension.
+
+// Whether transforms are combined by composition or by addition.
+// In generally, Compose is the best option in most cases.
+// It does not influence the results very much.
+(HowToCombineTransforms "Compose")
+
+// ******************* Similarity measure *********************
+
+// Number of grey level bins in each resolution level,
+// for the mutual information. 16 or 32 usually works fine.
+// You could also employ a hierarchical strategy:
+//(NumberOfHistogramBins 16 32 64)
+(NumberOfHistogramBins 32)
+
+// If you use a mask, this option is important. 
+// If the mask serves as region of interest, set it to false.
+// If the mask indicates which pixels are valid, then set it to true.
+// If you do not use a mask, the option doesn't matter.
+(ErodeMask "false")
+
+// ******************** Multiresolution **********************
+
+// The number of resolutions. 1 Is only enough if the expected
+// deformations are small. 3 or 4 mostly works fine. For large
+// images and large deformations, 5 or 6 may even be useful.
+(NumberOfResolutions 4)
+
+// The downsampling/blurring factors for the image pyramids.
+// By default, the images are downsampled by a factor of 2
+// compared to the next resolution.
+// So, in 2D, with 4 resolutions, the following schedule is used:
+//(ImagePyramidSchedule 8 8  4 4  2 2  1 1 )
+// And in 3D:
+//(ImagePyramidSchedule 8 8 8  4 4 4  2 2 2  1 1 1 )
+// You can specify any schedule, for example:
+//(ImagePyramidSchedule 4 4  4 3  2 1  1 1 )
+// Make sure that the number of elements equals the number
+// of resolutions times the image dimension.
+
+// ******************* Optimizer ****************************
+
+// Maximum number of iterations in each resolution level:
+// 200-2000 works usually fine for nonrigid registration.
+// The more, the better, but the longer computation time.
+// This is an important parameter!
+(MaximumNumberOfIterations 500)
+
+// The step size of the optimizer, in mm. By default the voxel size is used.
+// which usually works well. In case of unusual high-resolution images
+// (eg histology) it is necessary to increase this value a bit, to the size
+// of the "smallest visible structure" in the image:
+//(MaximumStepLength 1.0)
+
+// **************** Image sampling **********************
+
+// Number of spatial samples used to compute the mutual
+// information (and its derivative) in each iteration.
+// With an AdaptiveStochasticGradientDescent optimizer,
+// in combination with the two options below, around 2000
+// samples may already suffice.
+(NumberOfSpatialSamples 2048)
+
+// Refresh these spatial samples in every iteration, and select
+// them randomly. See the manual for information on other sampling
+// strategies.
+(NewSamplesEveryIteration "true")
+(ImageSampler "Random")
+
+// ************* Interpolation and Resampling ****************
+
+// Order of B-Spline interpolation used during registration/optimisation.
+// It may improve accuracy if you set this to 3. Never use 0.
+// An order of 1 gives linear interpolation. This is in most 
+// applications a good choice.
+(BSplineInterpolationOrder 1)
+
+// Order of B-Spline interpolation used for applying the final
+// deformation.
+// 3 gives good accuracy; recommended in most cases.
+// 1 gives worse accuracy (linear interpolation)
+// 0 gives worst accuracy, but is appropriate for binary images
+// (masks, segmentations); equivalent to nearest neighbor interpolation.
+(FinalBSplineInterpolationOrder 3)
+
+//Default pixel value for pixels that come from outside the picture:
+(DefaultPixelValue 0)
+
+// Choose whether to generate the deformed moving image.
+// You can save some time by setting this to false, if you are
+// not interested in the final deformed moving image, but only
+// want to analyze the deformation field for example.
+(WriteResultImage "true")
+
+// The pixel type and format of the resulting deformed moving image
+(ResultImagePixelType "short")
+(ResultImageFormat "mhd")
+
+
+
+
+=============== end of ParameterFile: parameters_BSpline.txt ===============
+
+WARNING: The parameter "BSplineTransformSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseCyclicTransform", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+
+Reading images...
+Reading images took 1 ms.
+
+WARNING: the fixed pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+WARNING: the moving pyramid schedule is not fully specified!
+  A default pyramid schedule is used.
+Initialization of all components (before registration) took: 0 ms.
+Preparation of the image pyramids took: 113 ms.
+
+Resolution: 0
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 0, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 0, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 0, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 0, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 0, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 0, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 0, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 0, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 0, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 0, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 0, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 0, does not exist at all.
+  The default value "100000" is used instead.
+Elastix initialization of all components (for this resolution) took: 0 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 0 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+  Computing JacobianTerms ...
+  Estimated band size covariance matrix: 44
+  Used band size covariance matrix: 44
+  Computing the Jacobian terms took 0 Seconds
+  NumberOfGradientMeasurements to estimate sigma_i: 6
+  Sampling gradients ...
+  Sampling the gradients took 0 Seconds
+Automatic parameter estimation took 0 Seconds
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-1.145470	0.000000	161.885986	0.005944	125
+1	-1.160649	0.000000	161.885986	0.012139	11
+2	-1.189604	0.000000	161.885986	0.005311	11
+3	-1.195284	0.000000	161.885986	0.008379	11
+4	-1.199290	0.000000	161.885986	0.007150	11
+5	-1.176499	0.000000	161.885986	0.003846	11
+6	-1.169742	0.000000	161.885986	0.005089	11
+7	-1.186809	0.000000	161.885986	0.002792	11
+8	-1.205220	0.000000	161.885986	0.003321	11
+9	-1.165598	0.000000	161.885986	0.004169	11
+10	-1.189933	0.000000	161.885986	0.003282	11
+11	-1.187218	0.000000	161.885986	0.003800	11
+12	-1.178341	0.170101	160.585240	0.003742	11
+13	-1.223653	0.063018	161.401641	0.004435	11
+14	-1.196447	0.000000	161.885986	0.003470	11
+15	-1.182556	0.000000	161.885986	0.003006	11
+16	-1.219105	0.000000	161.885986	0.006686	11
+17	-1.213885	0.000000	161.885986	0.003988	11
+18	-1.193003	0.000000	161.885986	0.003982	11
+19	-1.181240	0.000000	161.885986	0.003716	11
+20	-1.213590	0.000000	161.885986	0.002563	11
+21	-1.213706	0.000000	161.885986	0.003682	11
+22	-1.197708	0.000000	161.885986	0.002567	11
+23	-1.203784	0.921284	155.082416	0.004568	11
+24	-1.184177	1.816344	148.998705	0.002540	11
+25	-1.212666	1.709185	149.701794	0.001784	11
+26	-1.219790	1.619597	150.294708	0.004344	11
+27	-1.205787	1.664975	149.993800	0.004850	11
+28	-1.207047	1.557781	150.706569	0.006424	11
+29	-1.224559	2.557780	144.309255	0.003300	11
+30	-1.189144	3.557759	138.433060	0.003723	11
+31	-1.225343	3.450575	139.039908	0.004544	11
+32	-1.226991	4.450574	133.576778	0.004748	11
+33	-1.192891	5.450574	128.526726	0.002674	11
+34	-1.235341	6.348954	124.304782	0.003057	11
+35	-1.201265	6.241800	124.793723	0.002808	11
+36	-1.186713	6.134608	125.286710	0.001964	11
+37	-1.236623	6.030793	125.767885	0.003794	11
+38	-1.219782	7.005701	121.389772	0.004920	11
+39	-1.196810	8.005701	117.204740	0.002298	11
+40	-1.180947	8.995618	113.336744	0.002818	11
+41	-1.192517	8.888431	113.743196	0.002726	11
+42	-1.210500	8.781237	114.152602	0.004717	11
+43	-1.206924	9.781237	110.444092	0.003409	11
+44	-1.183723	10.781237	106.968956	0.001787	11
+45	-1.199550	10.674043	107.330969	0.003163	11
+46	-1.235305	10.683753	107.298075	0.002880	11
+47	-1.188023	11.681395	104.022663	0.003285	11
+48	-1.180391	12.680517	100.936862	0.004944	11
+49	-1.233618	12.573323	101.259137	0.002167	11
+50	-1.197470	13.012022	99.953062	0.003606	11
+51	-1.210257	14.005279	97.116943	0.001511	11
+52	-1.223889	13.898152	97.415065	0.004046	11
+53	-1.191055	13.791262	97.714354	0.001902	11
+54	-1.199219	14.751063	95.091038	0.002486	11
+55	-1.210882	15.245953	93.792697	0.003742	11
+56	-1.233879	15.138963	94.070374	0.002807	11
+57	-1.207689	15.378323	93.451414	0.001865	11
+58	-1.219718	15.271157	93.727524	0.002205	11
+59	-1.223909	15.164122	94.004929	0.002634	11
+60	-1.220139	15.056934	94.284382	0.004308	12
+61	-1.204032	16.027124	91.813928	0.002812	11
+62	-1.226432	15.919930	92.080503	0.005277	11
+63	-1.221345	16.919930	89.652216	0.002492	11
+64	-1.245551	16.812809	89.906193	0.003544	11
+65	-1.209348	16.705878	90.161160	0.001776	12
+66	-1.231522	17.101560	89.224842	0.003667	12
+67	-1.216280	18.096388	86.954470	0.002106	11
+68	-1.210152	17.997681	87.174560	0.002611	11
+69	-1.206398	17.933818	87.317553	0.001491	11
+70	-1.220937	17.827752	87.556080	0.001870	11
+71	-1.218318	17.731793	87.773002	0.002256	11
+72	-1.227536	17.629050	88.006453	0.002351	11
+73	-1.216917	17.571902	88.136843	0.001805	11
+74	-1.209034	17.464887	88.382053	0.002412	11
+75	-1.209860	17.638986	87.983823	0.002962	11
+76	-1.201428	17.531793	88.228589	0.003400	11
+77	-1.237604	18.531792	85.996751	0.003620	11
+78	-1.237899	18.424598	86.230574	0.004560	11
+79	-1.226291	19.424598	84.097453	0.004517	11
+80	-1.212786	19.317403	84.321048	0.002242	11
+81	-1.232760	19.293551	84.370964	0.003903	11
+82	-1.225999	19.663878	83.602594	0.003841	11
+83	-1.239823	19.556685	83.823561	0.002034	11
+84	-1.198025	19.450253	84.044115	0.003106	11
+85	-1.231473	19.349889	84.253162	0.002322	11
+86	-1.206735	20.307337	82.300289	0.004608	11
+87	-1.212185	20.200142	82.514417	0.002179	11
+88	-1.193440	21.196949	80.565201	0.002340	11
+89	-1.211106	22.164013	78.760186	0.003083	11
+90	-1.206654	22.056927	78.956069	0.002530	11
+91	-1.195434	23.000811	77.262343	0.003136	11
+92	-1.192170	22.894069	77.450230	0.004551	11
+93	-1.238118	23.894069	75.725053	0.003564	11
+94	-1.219467	24.849547	74.146985	0.005207	11
+95	-1.184901	24.743399	74.319045	0.004197	11
+96	-1.187808	25.743399	72.729108	0.002548	11
+97	-1.224489	26.734078	71.219680	0.004173	11
+98	-1.208401	26.626888	71.379967	0.003479	11
+99	-1.209502	26.519694	71.540985	0.004218	11
+100	-1.224540	26.415845	71.697672	0.004850	11
+101	-1.218538	26.308651	71.860128	0.004118	12
+102	-1.214828	27.308410	70.372958	0.003472	12
+103	-1.229756	28.250778	69.026437	0.002835	11
+104	-1.204423	28.164239	69.147937	0.003897	11
+105	-1.206469	29.163817	67.770077	0.002020	11
+106	-1.188207	30.163799	66.445529	0.002138	11
+107	-1.227855	30.056747	66.584848	0.002317	11
+108	-1.226933	30.218254	66.374885	0.002449	11
+109	-1.225655	30.111162	66.513959	0.002254	11
+110	-1.212827	31.100349	65.251112	0.004331	11
+111	-1.210977	30.993155	65.385640	0.003394	11
+112	-1.180839	31.958475	64.193799	0.002721	11
+113	-1.189695	32.957175	63.005629	0.003455	11
+114	-1.208122	32.859738	63.119611	0.003326	11
+115	-1.213332	33.859502	61.969314	0.003321	11
+116	-1.223759	34.843674	60.877186	0.002404	11
+117	-1.232038	34.757374	60.971410	0.003565	11
+118	-1.193183	34.652901	61.085867	0.002475	11
+119	-1.235871	35.642376	60.018770	0.001605	11
+120	-1.214787	35.554068	60.112488	0.002122	11
+121	-1.229398	35.464388	60.207962	0.004145	11
+122	-1.211612	35.357274	60.322395	0.003817	11
+123	-1.160501	36.357274	59.270699	0.001265	11
+124	-1.205514	36.252514	59.379152	0.003351	11
+125	-1.217192	36.661723	58.957755	0.001690	11
+126	-1.202823	36.554543	59.067547	0.002586	11
+127	-1.242072	37.317668	58.294611	0.003356	11
+128	-1.191919	38.317666	57.311859	0.001875	11
+129	-1.188181	38.210476	57.415612	0.002105	11
+130	-1.233321	38.132316	57.491503	0.001301	11
+131	-1.231435	38.138848	57.485153	0.001948	11
+132	-1.247065	38.040782	57.580635	0.001891	11
+133	-1.220936	37.934901	57.684083	0.002089	11
+134	-1.221992	38.160688	57.463932	0.002532	11
+135	-1.225445	38.099093	57.523822	0.001887	11
+136	-1.210463	37.995182	57.625142	0.002770	11
+137	-1.244471	38.956672	56.701041	0.001653	11
+138	-1.235832	39.060846	56.602694	0.001412	11
+139	-1.188673	38.969834	56.688596	0.001645	11
+140	-1.205212	38.868119	56.784909	0.002641	11
+141	-1.211121	39.795355	55.918840	0.002236	11
+142	-1.200937	39.688163	56.017608	0.001473	11
+143	-1.217257	39.756420	55.954675	0.003202	11
+144	-1.212843	39.707584	55.999687	0.002534	11
+145	-1.209493	40.707568	55.092200	0.002584	11
+146	-1.201611	41.704445	54.216343	0.003746	11
+147	-1.196995	41.601312	54.305662	0.002173	11
+148	-1.207590	42.009099	53.954203	0.003257	11
+149	-1.206931	42.062291	53.908693	0.001801	11
+150	-1.215228	42.004390	53.958235	0.003718	11
+151	-1.234154	41.898406	54.049155	0.003972	11
+152	-1.197949	42.826505	53.263229	0.002363	11
+153	-1.229896	42.860270	53.235066	0.002536	11
+154	-1.209716	43.791723	52.469753	0.004661	11
+155	-1.209342	44.791480	51.672431	0.002347	11
+156	-1.209407	44.684306	51.756743	0.002565	11
+157	-1.242164	44.577189	51.841285	0.001108	11
+158	-1.213126	44.521894	51.885035	0.002418	11
+159	-1.200856	44.435254	51.953733	0.003869	11
+160	-1.196487	44.328085	52.038962	0.002153	11
+161	-1.237187	45.280726	51.291015	0.003391	11
+162	-1.186649	45.173532	51.374101	0.003100	11
+163	-1.216439	45.066921	51.457003	0.002307	11
+164	-1.238886	44.962504	51.538457	0.001767	11
+165	-1.237427	44.855907	51.621880	0.002875	11
+166	-1.206212	45.837503	50.863745	0.002458	11
+167	-1.245035	46.832921	50.117342	0.004131	11
+168	-1.222387	46.725739	50.196657	0.002950	11
+169	-1.232349	46.618545	50.276233	0.002349	11
+170	-1.216736	46.511360	50.356055	0.003189	11
+171	-1.242342	46.520072	50.349557	0.002890	11
+172	-1.220206	46.708163	50.209688	0.003323	11
+173	-1.235001	46.600968	50.289305	0.003386	11
+174	-1.212801	47.600968	49.556235	0.002140	11
+175	-1.211267	47.501597	49.628124	0.003568	11
+176	-1.211539	47.394402	49.705906	0.001991	11
+177	-1.224670	47.287794	49.783504	0.002409	11
+178	-1.192392	47.339879	49.745562	0.003772	11
+179	-1.201663	47.232754	49.823662	0.004696	11
+180	-1.220647	47.125561	49.902058	0.003217	11
+181	-1.228446	48.125561	49.180154	0.002177	11
+182	-1.222011	49.124672	48.479452	0.003056	11
+183	-1.236771	49.023364	48.549591	0.003616	11
+184	-1.217199	48.916176	48.624023	0.004892	11
+185	-1.210257	49.916176	47.938368	0.003331	11
+186	-1.202946	49.808981	48.010939	0.003235	11
+187	-1.196565	49.701787	48.083731	0.002865	11
+188	-1.220905	50.700465	47.413998	0.001615	11
+189	-1.204897	50.740757	47.387369	0.001793	11
+190	-1.218790	50.634357	47.457754	0.002488	11
+191	-1.208469	50.576522	47.496101	0.001789	11
+192	-1.218896	50.469859	47.566985	0.002010	11
+193	-1.227383	50.416673	47.602410	0.001286	11
+194	-1.190143	51.029709	47.197271	0.004195	11
+195	-1.207052	50.926226	47.265176	0.001402	11
+196	-1.205591	50.906113	47.278396	0.001945	11
+197	-1.208350	50.822023	47.333751	0.003078	11
+198	-1.206090	50.758854	47.375418	0.002288	11
+199	-1.199650	50.651737	47.446243	0.003444	11
+200	-1.193677	50.545581	47.516641	0.004498	11
+201	-1.207657	51.544264	46.862502	0.001841	11
+202	-1.228742	52.024789	46.554133	0.004744	11
+203	-1.189313	51.917594	46.622571	0.003066	11
+204	-1.205416	51.810400	46.691211	0.002546	11
+205	-1.240434	52.607650	46.185495	0.003031	11
+206	-1.206651	53.432591	45.673618	0.003216	11
+207	-1.198084	53.331020	45.736029	0.002446	11
+208	-1.217451	53.378604	45.706769	0.002796	11
+209	-1.207220	53.271410	45.772737	0.003324	11
+210	-1.220676	54.271014	45.164872	0.003178	11
+211	-1.237120	55.061272	44.695620	0.001869	11
+212	-1.249232	56.061024	44.115761	0.002658	11
+213	-1.221869	55.971243	44.167219	0.002831	11
+214	-1.219673	55.864079	44.228797	0.003482	11
+215	-1.174552	55.756884	44.290564	0.002109	11
+216	-1.186035	56.756829	43.720992	0.002888	11
+217	-1.203416	56.765155	43.716311	0.002771	11
+218	-1.237148	57.760099	43.164061	0.003117	11
+219	-1.224371	58.712906	42.648122	0.002857	11
+220	-1.247153	59.706304	42.123174	0.002064	11
+221	-1.178133	59.969794	41.986098	0.002908	11
+222	-1.231208	59.866124	42.039924	0.002043	11
+223	-1.221732	59.758944	42.095718	0.002667	11
+224	-1.214560	60.151422	41.892127	0.001903	11
+225	-1.216548	60.085541	41.926164	0.002116	11
+226	-1.205604	60.204794	41.864594	0.003905	11
+227	-1.217161	60.112250	41.912359	0.002396	11
+228	-1.223452	60.005060	41.967819	0.004040	11
+229	-1.216384	61.002845	41.457168	0.002688	11
+230	-1.206469	62.002809	40.957719	0.003113	11
+231	-1.225945	61.895629	41.010675	0.003736	11
+232	-1.219193	62.895629	40.521845	0.002600	11
+233	-1.225089	63.895629	40.044532	0.003405	11
+234	-1.219759	64.895582	39.578353	0.002379	11
+235	-1.204786	65.893611	39.123771	0.001988	11
+236	-1.236874	65.787532	39.171591	0.004776	11
+237	-1.210364	66.787528	38.725384	0.002735	11
+238	-1.233604	67.787528	38.289226	0.003062	11
+239	-1.223275	68.766585	37.871617	0.001946	11
+240	-1.209264	68.774830	37.868139	0.003288	11
+241	-1.189809	69.406484	37.603561	0.002005	11
+242	-1.234986	69.300012	37.647899	0.002940	11
+243	-1.224248	69.192819	37.692643	0.002418	11
+244	-1.236315	69.086119	37.737287	0.001714	11
+245	-1.252699	69.239086	37.673317	0.004289	11
+246	-1.213841	69.131894	37.718121	0.003149	11
+247	-1.261091	69.024707	37.763030	0.003285	11
+248	-1.216304	70.015994	37.351740	0.003826	11
+249	-1.202513	71.015994	36.945813	0.001406	11
+250	-1.216912	70.911149	36.987958	0.004636	11
+251	-1.237590	70.873438	37.003140	0.006417	11
+252	-1.213920	71.873438	36.604715	0.002633	11
+253	-1.224514	71.766244	36.647013	0.006266	11
+254	-1.201300	72.739657	36.266462	0.001000	11
+255	-1.208954	73.719787	35.891188	0.002679	11
+256	-1.223043	73.629192	35.925549	0.001371	11
+257	-1.215010	73.525317	35.965029	0.002873	11
+258	-1.227723	74.364925	35.648386	0.002738	11
+259	-1.217502	74.257753	35.688494	0.004032	11
+260	-1.238256	74.150559	35.728699	0.004027	11
+261	-1.219402	75.150557	35.357109	0.003885	11
+262	-1.210237	75.043363	35.396571	0.003462	11
+263	-1.214721	76.043297	35.031845	0.002242	11
+264	-1.221127	76.909179	34.722033	0.002791	11
+265	-1.186215	76.801985	34.760089	0.003400	11
+266	-1.176485	77.746042	34.427767	0.003126	11
+267	-1.199959	78.745971	34.082637	0.003118	11
+268	-1.226977	78.638783	34.119302	0.001467	11
+269	-1.215324	79.488517	33.830788	0.002225	11
+270	-1.203031	79.429430	33.850692	0.002672	11
+271	-1.241492	80.371370	33.536153	0.002751	11
+272	-1.215500	80.265103	33.571345	0.002223	11
+273	-1.212345	81.264758	33.243180	0.004536	11
+274	-1.201184	81.157640	33.278037	0.001578	11
+275	-1.209383	81.050579	33.312949	0.001767	11
+276	-1.226834	81.032177	33.318957	0.003405	11
+277	-1.228082	80.924984	33.353998	0.003240	11
+278	-1.201897	81.924984	33.029937	0.002794	11
+279	-1.223160	82.390893	32.881095	0.002202	11
+280	-1.238216	83.384854	32.567998	0.001985	11
+281	-1.256595	83.277864	32.601413	0.003665	11
+282	-1.200462	84.263544	32.296136	0.002883	11
+283	-1.228573	85.263544	31.992211	0.001744	12
+284	-1.230178	85.849024	31.816909	0.003363	11
+285	-1.221837	85.767647	31.841160	0.002030	11
+286	-1.233860	86.267450	31.692799	0.004373	11
+287	-1.228625	87.218901	31.414159	0.001927	11
+288	-1.214138	87.551325	31.317957	0.004345	12
+289	-1.221823	87.444189	31.348897	0.002155	12
+290	-1.227213	87.337091	31.379888	0.003355	11
+291	-1.211799	87.229896	31.410967	0.002181	11
+292	-1.223298	87.122702	31.442108	0.001980	11
+293	-1.229180	87.691375	31.277603	0.002819	11
+294	-1.224757	87.966178	31.198724	0.002744	12
+295	-1.193160	87.858984	31.229445	0.002120	12
+296	-1.205348	87.753476	31.259743	0.002325	11
+297	-1.213491	87.647071	31.290358	0.002521	11
+298	-1.224844	87.663752	31.285554	0.003144	11
+299	-1.192421	87.558579	31.315864	0.002838	11
+300	-1.205793	87.451390	31.346816	0.002285	11
+301	-1.187489	87.353143	31.375239	0.002717	12
+302	-1.216912	88.098968	31.160750	0.002903	11
+303	-1.227842	89.098965	30.877726	0.001912	11
+304	-1.233430	88.991794	30.907812	0.002604	11
+305	-1.222996	89.985921	30.630964	0.002294	11
+306	-1.209433	89.878731	30.660576	0.003801	11
+307	-1.209469	90.878730	30.386524	0.003826	11
+308	-1.202774	90.771536	30.415666	0.002991	11
+309	-1.204208	90.809101	30.405447	0.003039	11
+310	-1.224452	90.701907	30.434626	0.002513	11
+311	-1.202247	90.594713	30.463860	0.003680	11
+312	-1.220025	91.594712	30.193298	0.002122	11
+313	-1.211272	91.487518	30.222071	0.003701	11
+314	-1.244894	92.487501	29.955772	0.001915	11
+315	-1.198949	92.578851	29.931679	0.005948	11
+316	-1.219798	92.519342	29.947370	0.002372	11
+317	-1.195276	93.519342	29.685865	0.003111	11
+318	-1.205979	93.682110	29.643732	0.002232	11
+319	-1.217994	93.574916	29.671466	0.004181	11
+320	-1.219252	93.467721	29.699252	0.003061	11
+321	-1.200416	94.467721	29.442044	0.004585	11
+322	-1.213903	94.360527	29.469402	0.003970	11
+323	-1.187411	95.360527	29.216142	0.001226	11
+324	-1.194776	95.253364	29.243074	0.001940	11
+325	-1.224431	95.185308	29.260203	0.002400	11
+326	-1.231703	95.326981	29.224568	0.001949	11
+327	-1.219722	95.219983	29.251473	0.001848	11
+328	-1.237568	95.118025	29.277158	0.002431	11
+329	-1.248971	95.010836	29.304208	0.004399	11
+330	-1.244741	96.010836	29.053768	0.002498	11
+331	-1.232828	96.417120	28.953237	0.002453	11
+332	-1.229060	97.262867	28.746180	0.002831	11
+333	-1.218510	97.329246	28.730055	0.001667	11
+334	-1.240897	97.223270	28.755809	0.002215	11
+335	-1.218644	97.116619	28.781773	0.002714	11
+336	-1.252374	97.009444	28.807912	0.005319	11
+337	-1.215874	98.009443	28.565848	0.001761	11
+338	-1.208085	99.005029	28.328860	0.004135	11
+339	-1.179707	98.897848	28.354185	0.002269	11
+340	-1.216327	98.790653	28.379557	0.001834	11
+341	-1.220941	99.780630	28.146945	0.001821	11
+342	-1.218089	99.684480	28.169370	0.003081	11
+343	-1.215963	100.683945	27.937997	0.002136	11
+344	-1.213938	100.603320	27.956521	0.003742	11
+345	-1.203832	101.600847	27.729056	0.002523	11
+346	-1.229331	101.493653	27.753321	0.002383	11
+347	-1.166233	101.386460	27.777629	0.002651	11
+348	-1.206815	102.383028	27.553269	0.002306	11
+349	-1.252118	102.275834	27.577228	0.002150	11
+350	-1.237689	102.170133	27.600893	0.003567	11
+351	-1.225804	102.878767	27.443006	0.002788	11
+352	-1.209358	103.878767	27.223248	0.002894	11
+353	-1.255935	103.771575	27.246636	0.003141	11
+354	-1.199176	104.771572	27.030001	0.001904	11
+355	-1.213011	104.664386	27.053056	0.002962	11
+356	-1.204261	104.557252	27.076140	0.003515	11
+357	-1.225684	104.450072	27.099273	0.001913	11
+358	-1.216210	104.876156	27.007543	0.003846	11
+359	-1.241968	105.873440	26.795251	0.003801	11
+360	-1.240671	105.766246	26.817910	0.003420	11
+361	-1.231341	105.659052	26.840606	0.003216	11
+362	-1.229854	106.659052	26.630354	0.003816	11
+363	-1.252058	106.554057	26.652274	0.002708	11
+364	-1.237512	106.451064	26.673812	0.002273	11
+365	-1.222706	106.615817	26.639376	0.002797	11
+366	-1.212873	106.625879	26.637276	0.002133	11
+367	-1.219490	106.519387	26.659521	0.003532	11
+368	-1.222003	106.412195	26.681949	0.002627	11
+369	-1.223630	107.412188	26.474167	0.002116	11
+370	-1.208563	107.317624	26.493677	0.002179	11
+371	-1.211946	107.210443	26.515825	0.001948	11
+372	-1.182686	107.423937	26.471745	0.004108	11
+373	-1.232256	107.316744	26.493859	0.001561	11
+374	-1.202727	107.253447	26.506935	0.003145	11
+375	-1.217734	107.255951	26.506417	0.005642	11
+376	-1.201837	107.148757	26.528589	0.002422	11
+377	-1.213901	108.148646	26.323201	0.002442	11
+378	-1.209278	108.041470	26.345063	0.002079	11
+379	-1.243334	109.021567	26.146475	0.002526	11
+380	-1.207188	108.997634	26.151289	0.002733	11
+381	-1.250688	108.890467	26.172865	0.002680	11
+382	-1.232049	109.827905	25.985326	0.002361	11
+383	-1.229117	109.804066	25.990061	0.002988	11
+384	-1.228818	109.696872	26.011378	0.002780	11
+385	-1.218135	110.692512	25.814723	0.004272	11
+386	-1.204465	111.690741	25.620520	0.005108	11
+387	-1.192491	112.690741	25.428879	0.001940	11
+388	-1.235025	112.583546	25.449285	0.001165	11
+389	-1.189206	112.522525	25.460915	0.001277	11
+390	-1.235427	112.456557	25.473501	0.002330	11
+391	-1.210395	112.375901	25.488905	0.002931	11
+392	-1.231822	112.299257	25.503561	0.001711	11
+393	-1.202842	113.190804	25.334118	0.005563	11
+394	-1.235400	114.190783	25.146727	0.002561	11
+395	-1.238327	114.083589	25.166682	0.002394	11
+396	-1.239208	114.607726	25.069410	0.004968	11
+397	-1.220559	114.500532	25.089243	0.002113	11
+398	-1.222322	115.500532	24.905439	0.002740	11
+399	-1.200377	115.393427	24.924997	0.003525	11
+400	-1.225470	116.393427	24.743583	0.003227	11
+401	-1.239499	117.393425	24.564792	0.003259	11
+402	-1.205233	118.393424	24.388566	0.001747	11
+403	-1.209918	118.287203	24.407165	0.001990	11
+404	-1.214808	118.180310	24.425910	0.003182	11
+405	-1.227239	119.172337	24.253043	0.001953	11
+406	-1.251900	119.065143	24.271604	0.001771	11
+407	-1.204899	118.968831	24.288305	0.002063	11
+408	-1.190976	118.865012	24.306334	0.001717	11
+409	-1.211479	118.758755	24.324814	0.001762	11
+410	-1.243766	118.652011	24.343407	0.001448	11
+411	-1.237779	119.174682	24.252637	0.003544	11
+412	-1.224959	119.080347	24.268970	0.001436	11
+413	-1.214679	118.978552	24.286619	0.003145	11
+414	-1.203989	119.904056	24.127096	0.003943	11
+415	-1.225225	119.896639	24.128366	0.002513	11
+416	-1.211768	119.789444	24.146737	0.002600	11
+417	-1.212491	119.682251	24.165136	0.001323	11
+418	-1.242431	119.589171	24.181135	0.003422	11
+419	-1.196673	120.577957	24.012253	0.001870	11
+420	-1.225838	120.471075	24.030394	0.003121	11
+421	-1.236287	120.593404	24.009633	0.002790	11
+422	-1.224237	121.589061	23.841981	0.003588	11
+423	-1.219991	121.481887	23.859915	0.004655	11
+424	-1.219249	121.374692	23.877879	0.002021	11
+425	-1.245587	121.267501	23.895870	0.004116	11
+426	-1.213518	121.273925	23.894791	0.002608	11
+427	-1.206263	122.269639	23.728724	0.001497	11
+428	-1.225851	123.185254	23.578040	0.002348	11
+429	-1.193660	123.738219	23.487962	0.002852	11
+430	-1.197674	124.437425	23.375041	0.002753	11
+431	-1.218096	124.330232	23.392282	0.003341	11
+432	-1.221687	124.223249	23.409514	0.003075	11
+433	-1.227711	124.116207	23.426782	0.002281	11
+434	-1.204064	124.010221	23.443904	0.002698	11
+435	-1.220556	123.903028	23.461247	0.001536	11
+436	-1.229833	124.834088	23.311461	0.002013	11
+437	-1.206406	124.727697	23.328480	0.002277	11
+438	-1.222145	124.625718	23.344817	0.002970	11
+439	-1.221496	124.529997	23.360172	0.004692	11
+440	-1.221142	125.467126	23.210708	0.004750	11
+441	-1.238473	126.467126	23.053312	0.002151	11
+442	-1.202194	126.359932	23.070082	0.001451	11
+443	-1.201658	126.346966	23.072112	0.004030	11
+444	-1.234512	127.272208	22.928138	0.002314	11
+445	-1.213702	128.271378	22.774666	0.002625	11
+446	-1.224791	128.166807	22.790631	0.003656	11
+447	-1.233604	128.178931	22.788779	0.002002	11
+448	-1.208993	128.086370	22.802928	0.001797	11
+449	-1.227782	128.018030	22.813385	0.002357	11
+450	-1.225748	127.911933	22.829639	0.002242	11
+451	-1.204102	127.804789	22.846077	0.001643	11
+452	-1.203454	127.697647	22.862539	0.003980	11
+453	-1.236107	127.691601	22.863468	0.004218	11
+454	-1.217012	127.620736	22.874370	0.002935	11
+455	-1.239191	128.620736	22.721488	0.002114	11
+456	-1.224078	129.592190	22.574914	0.002772	11
+457	-1.210024	129.484996	22.590995	0.003365	11
+458	-1.237231	130.484993	22.441865	0.001773	11
+459	-1.204061	130.383150	22.456962	0.003577	11
+460	-1.225728	130.977942	22.369073	0.001665	11
+461	-1.199125	131.977924	22.222852	0.001270	11
+462	-1.224472	131.879012	22.237230	0.002798	11
+463	-1.232748	132.355874	22.168083	0.002863	11
+464	-1.227311	132.248680	22.183589	0.002321	11
+465	-1.201956	132.144468	22.198684	0.003116	11
+466	-1.214105	133.138319	22.055552	0.003393	11
+467	-1.206657	134.138319	21.913385	0.003238	11
+468	-1.217248	134.036066	21.927838	0.001179	11
+469	-1.236658	133.930148	21.942829	0.003044	11
+470	-1.202460	133.924956	21.943564	0.003974	11
+471	-1.207473	133.818201	21.958695	0.002676	11
+472	-1.237379	133.711007	21.973910	0.003562	11
+473	-1.239661	134.711007	21.832790	0.001301	11
+474	-1.227170	134.608816	21.847128	0.002489	11
+475	-1.217174	134.505836	21.861596	0.002154	11
+476	-1.222246	134.433095	21.871827	0.001594	12
+477	-1.235762	134.326054	21.886899	0.002247	12
+478	-1.215743	134.481631	21.864999	0.002566	11
+479	-1.226898	134.374460	21.880081	0.003581	11
+480	-1.235088	135.374452	21.740161	0.002680	11
+481	-1.224306	136.374451	21.602018	0.003570	11
+482	-1.193666	137.374451	21.465620	0.004762	11
+483	-1.222391	138.374451	21.330933	0.003314	12
+484	-1.221170	139.374451	21.197926	0.005474	11
+485	-1.230951	139.880532	21.131244	0.001957	11
+486	-1.209812	140.873036	21.001680	0.001445	11
+487	-1.240505	140.816685	21.008994	0.002632	11
+488	-1.218658	141.289937	20.947730	0.004109	12
+489	-1.210599	141.745535	20.889088	0.003590	11
+490	-1.176123	141.638368	20.902852	0.001294	12
+491	-1.210953	141.545254	20.914826	0.003693	11
+492	-1.244900	141.517903	20.918346	0.003177	11
+493	-1.239931	141.770558	20.885876	0.002552	11
+494	-1.214900	142.770491	20.758353	0.002069	12
+495	-1.218477	142.667742	20.771385	0.003725	12
+496	-1.211318	142.562771	20.784716	0.003303	12
+497	-1.217257	143.562769	20.658413	0.002147	11
+498	-1.219900	144.435359	20.549450	0.001896	11
+499	-1.232525	144.329833	20.562567	0.002395	11
+Time spent in resolution 0 (ITK initialisation and iterating): 5.962 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 0:
+( SP_a 3399.605716 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.107194 )
+( SigmoidScale 0.000000 )
+
+
+Resolution: 1
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 1, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 1, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 1, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 1, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 1, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 1, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 1, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 1, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 1, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 1, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 1, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 1, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 1, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 1, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 1, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 1, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 1, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 1, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 1, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 1, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 1, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 1, does not exist at all.
+  The default value "100000" is used instead.
+Elastix initialization of all components (for this resolution) took: 4 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 111 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+  Computing JacobianTerms ...
+  Estimated band size covariance matrix: 74
+  Used band size covariance matrix: 74
+  Computing the Jacobian terms took 0 Seconds
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 0 Seconds
+Automatic parameter estimation took 0 Seconds
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-1.003882	0.000000	296.282620	0.009252	201
+1	-1.019862	0.000000	296.282620	0.009299	10
+2	-1.040200	0.000000	296.282620	0.006606	10
+3	-1.013254	0.000000	296.282620	0.006762	10
+4	-1.031246	0.000000	296.282620	0.006188	10
+5	-1.037265	0.134770	294.393311	0.006504	10
+6	-1.042257	0.000000	296.282620	0.007386	11
+7	-1.053352	1.000000	282.815228	0.004192	10
+8	-1.023246	0.767459	285.836539	0.005426	10
+9	-1.017935	0.535492	288.915392	0.007846	10
+10	-1.036645	1.535238	276.098040	0.004274	10
+11	-1.044847	1.306030	278.935111	0.003876	10
+12	-1.024334	1.073495	281.873577	0.003707	10
+13	-1.048699	0.886675	284.279597	0.004629	10
+14	-1.052183	0.716358	286.509141	0.005759	10
+15	-1.002596	1.716358	273.896681	0.006459	10
+16	-1.044240	2.641618	263.177206	0.006636	10
+17	-1.033560	2.409076	265.791573	0.006105	11
+18	-1.032108	2.225161	267.896318	0.005416	10
+19	-1.046663	3.225160	256.837722	0.008780	11
+20	-1.052606	4.225160	246.655915	0.005089	10
+21	-1.054331	5.225160	237.250599	0.006142	10
+22	-1.070670	4.992618	239.373158	0.007161	10
+23	-1.020607	5.992618	230.505061	0.007427	10
+24	-1.043467	6.992618	222.270566	0.006756	10
+25	-1.060731	7.992618	214.604113	0.004879	10
+26	-1.043992	8.992618	207.448881	0.005565	10
+27	-1.067786	8.829408	208.583928	0.006121	10
+28	-1.058187	9.829408	201.818182	0.007787	10
+29	-1.035802	10.829407	195.477569	0.003483	10
+30	-1.068128	11.386611	192.114419	0.008366	10
+31	-1.080159	11.187800	193.301036	0.007780	10
+32	-1.017466	12.187800	187.476575	0.005982	10
+33	-1.061577	13.187800	181.992848	0.004591	10
+34	-1.054483	12.955326	183.238853	0.006435	10
+35	-1.038290	13.955326	177.996766	0.006689	10
+36	-1.050503	14.955326	173.046268	0.006047	10
+37	-1.039458	15.955326	168.363688	0.004030	10
+38	-1.048388	15.883241	168.692743	0.007928	10
+39	-1.026117	16.883241	164.239778	0.008215	10
+40	-1.039192	17.883241	160.015856	0.005228	10
+41	-1.055939	18.883121	156.004216	0.011528	10
+42	-1.075541	19.876489	152.213051	0.006209	10
+43	-1.049669	20.876489	148.578241	0.003992	10
+44	-1.071760	20.643946	149.407912	0.007862	10
+45	-1.040349	21.643926	145.904368	0.004956	10
+46	-1.083453	22.643926	142.561305	0.006884	10
+47	-1.042392	23.643919	139.368029	0.004956	10
+48	-1.062962	24.643916	136.314662	0.008240	10
+49	-1.069483	25.643916	133.392209	0.007018	10
+50	-1.042926	26.643916	130.592435	0.007871	10
+51	-1.045724	27.643916	127.907774	0.006262	10
+52	-1.048117	28.643916	125.331269	0.005295	10
+53	-1.039587	29.643912	122.856523	0.005562	10
+54	-1.078318	29.411370	123.423248	0.006756	10
+55	-1.034129	30.411370	121.022549	0.008487	10
+56	-1.060751	31.411370	118.713459	0.004864	10
+57	-1.032479	32.411370	116.490834	0.005745	10
+58	-1.026662	32.178827	117.000230	0.004457	10
+59	-1.041510	31.946285	117.514100	0.008168	10
+60	-1.041531	32.946285	115.335746	0.005623	10
+61	-1.048782	33.312878	114.557270	0.007703	10
+62	-1.045204	34.312878	112.486193	0.008118	10
+63	-1.036455	35.312878	110.488671	0.002987	10
+64	-1.043939	36.022648	109.113400	0.006631	10
+65	-1.049858	37.001004	107.272884	0.003339	10
+66	-1.071938	36.768462	107.704703	0.008191	10
+67	-1.061673	36.536047	108.139772	0.007761	10
+68	-1.072737	37.536047	106.292367	0.007053	10
+69	-1.074210	38.536047	104.507022	0.005595	10
+70	-1.052869	38.303505	104.916818	0.002765	10
+71	-1.049860	38.071723	105.328483	0.006518	10
+72	-1.031387	39.068265	103.581068	0.004508	10
+73	-1.041561	38.835726	103.983614	0.004582	10
+74	-1.049185	39.829771	102.284374	0.005466	10
+75	-1.066302	39.597258	102.676841	0.004673	10
+76	-1.051311	40.597258	101.009935	0.004701	10
+77	-1.049875	40.414644	101.310285	0.004332	10
+78	-1.077489	41.414640	99.687109	0.005353	10
+79	-1.057500	42.358272	98.202410	0.006953	10
+80	-1.082443	43.358272	96.676539	0.004765	10
+81	-1.050905	43.125731	97.027121	0.005748	10
+82	-1.071841	42.893190	97.380254	0.005857	10
+83	-1.074306	43.893190	95.879630	0.008344	10
+84	-1.067987	44.893190	94.424553	0.009814	10
+85	-1.071823	45.893190	93.012981	0.006629	10
+86	-1.057448	46.893190	91.642992	0.006075	10
+87	-1.066924	47.893190	90.312773	0.007163	10
+88	-1.052119	48.893190	89.020619	0.005007	10
+89	-1.049669	48.660647	89.317789	0.006682	10
+90	-1.035784	49.660647	88.053751	0.005071	10
+91	-1.063991	49.428105	88.344490	0.005085	10
+92	-1.044885	50.427899	87.107911	0.005628	10
+93	-1.058853	51.427899	85.905226	0.007371	10
+94	-1.047138	51.195356	86.181929	0.006688	10
+95	-1.024952	50.962813	86.460419	0.007397	10
+96	-1.062120	51.962813	85.275426	0.006635	10
+97	-1.053163	52.962813	84.122476	0.005393	10
+98	-1.028434	53.872448	83.100462	0.006272	10
+99	-1.048444	53.831432	83.146011	0.006676	10
+100	-1.052160	53.599061	83.405005	0.005750	10
+101	-1.064004	53.366518	83.665811	0.006284	10
+102	-1.064747	54.366518	82.555691	0.003489	10
+103	-1.055996	55.358606	81.483088	0.005113	10
+104	-1.059734	56.358603	80.429775	0.005102	10
+105	-1.073400	57.317455	79.445062	0.008243	10
+106	-1.055426	58.317455	78.443453	0.006612	10
+107	-1.048154	59.317455	77.466785	0.004131	10
+108	-1.063706	59.353493	77.432042	0.006989	10
+109	-1.058730	60.342124	76.490934	0.004431	10
+110	-1.076205	61.342123	75.561994	0.003122	10
+111	-1.047078	61.109586	75.775989	0.003927	10
+112	-1.085705	60.877271	75.990992	0.007744	10
+113	-1.066069	61.877271	75.074082	0.005891	10
+114	-1.062208	61.644728	75.285323	0.008870	10
+115	-1.067415	62.644728	74.385262	0.003353	10
+116	-1.023346	62.412185	74.592639	0.003620	10
+117	-1.055608	62.201153	74.781836	0.005734	10
+118	-1.057590	62.999088	74.071459	0.006233	10
+119	-1.034716	63.999088	73.200021	0.005201	10
+120	-1.058641	64.999088	72.348849	0.004228	10
+121	-1.057706	65.999088	71.517244	0.005834	10
+122	-1.046368	66.999087	70.704540	0.007188	10
+123	-1.067579	67.999087	69.910099	0.005088	10
+124	-1.071257	67.766545	70.093243	0.004823	10
+125	-1.072171	67.778357	70.083917	0.004944	10
+126	-1.064969	68.778356	69.303285	0.008452	10
+127	-1.043143	69.778356	68.539851	0.006701	10
+128	-1.043511	70.778356	67.793054	0.003432	10
+129	-1.037757	71.778355	67.062356	0.005362	10
+130	-1.045253	71.828014	67.026480	0.002222	10
+131	-1.071751	71.595472	67.194809	0.006761	10
+132	-1.051543	72.146695	66.797163	0.006465	10
+133	-1.036565	73.146695	66.087663	0.006624	10
+134	-1.037891	72.914153	66.251303	0.005585	10
+135	-1.063465	73.914153	65.553291	0.004348	10
+136	-1.073120	74.866089	64.902356	0.006327	10
+137	-1.068622	75.865765	64.232549	0.005406	10
+138	-1.034116	75.633424	64.386987	0.005691	10
+139	-1.024466	76.149303	64.045081	0.005689	10
+140	-1.073620	75.981352	64.155994	0.006019	10
+141	-1.062063	75.748809	64.310197	0.004255	10
+142	-1.072322	75.516961	64.464680	0.004951	10
+143	-1.020776	76.516957	63.803621	0.005298	10
+144	-1.051176	77.516957	63.155980	0.004616	10
+145	-1.016329	78.516905	62.521388	0.006174	10
+146	-1.049559	78.284423	62.667787	0.006060	10
+147	-1.052046	79.284420	62.042888	0.004549	10
+148	-1.066256	80.284420	61.430327	0.006265	10
+149	-1.047206	80.051877	61.571692	0.002736	10
+150	-1.059056	81.051843	60.968375	0.003463	10
+151	-1.073358	81.716149	60.574068	0.005243	10
+152	-1.028183	82.553843	60.084057	0.004682	10
+153	-1.079335	82.321448	60.219201	0.004709	10
+154	-1.080598	82.089178	60.354880	0.007227	10
+155	-1.046452	83.089178	59.775042	0.004839	10
+156	-1.067357	84.089022	59.206327	0.004077	10
+157	-1.046992	85.089010	58.648252	0.005784	10
+158	-1.077043	84.856468	58.777089	0.003724	10
+159	-1.035048	85.856467	58.227033	0.004984	10
+160	-1.074420	85.625579	58.353118	0.004957	10
+161	-1.048396	86.616390	57.815868	0.003289	10
+162	-1.056042	86.383889	57.941047	0.005483	10
+163	-1.056729	86.151348	58.066792	0.004452	10
+164	-1.006241	87.120805	57.546141	0.005502	10
+165	-1.070073	88.119387	57.019520	0.004872	10
+166	-1.068637	89.119383	56.501724	0.006121	10
+167	-1.052026	90.119381	55.993247	0.004211	10
+168	-1.062616	91.119320	55.493870	0.004569	10
+169	-1.040987	90.888299	55.608451	0.004210	10
+170	-1.069740	91.888299	55.115854	0.005468	10
+171	-1.073085	91.655757	55.229624	0.006776	10
+172	-1.058212	91.423214	55.343864	0.003273	10
+173	-1.066846	91.190685	55.458570	0.005569	10
+174	-1.071685	92.155475	54.985718	0.005278	10
+175	-1.050331	91.954425	55.083588	0.005259	10
+176	-1.054914	91.721883	55.197224	0.004671	10
+177	-1.062231	92.721775	54.711905	0.004459	10
+178	-1.055062	92.489233	54.824012	0.006346	10
+179	-1.068330	93.264318	54.452126	0.006050	10
+180	-1.043097	94.264318	53.979715	0.003449	10
+181	-1.036328	95.049007	53.614720	0.005446	10
+182	-1.066038	94.816465	53.722371	0.005092	10
+183	-1.060098	95.814522	53.263369	0.004637	10
+184	-1.042934	95.581985	53.369610	0.003612	10
+185	-1.031456	96.581860	52.915773	0.004478	10
+186	-1.066765	96.354111	53.018467	0.005796	10
+187	-1.075627	97.353803	52.570639	0.005932	10
+188	-1.071096	97.121721	52.673928	0.007256	10
+189	-1.019739	96.892047	52.776546	0.007069	10
+190	-1.044126	97.892047	52.332643	0.006092	10
+191	-1.056219	97.659504	52.435201	0.003933	10
+192	-1.055484	98.659480	51.997009	0.006909	10
+193	-1.053494	99.659480	51.566069	0.005183	10
+194	-1.029320	99.426937	51.665642	0.005272	10
+195	-1.060205	100.426853	51.240190	0.005971	10
+196	-1.031758	101.426853	50.821653	0.007620	10
+197	-1.049633	101.194311	50.918369	0.003376	10
+198	-1.050538	100.961768	51.015454	0.005864	10
+199	-1.082439	100.745342	51.106144	0.007036	10
+200	-1.056371	101.745342	50.689785	0.003822	10
+201	-1.072294	102.745342	50.280156	0.003480	10
+202	-1.058169	102.512799	50.374820	0.004879	10
+203	-1.070517	102.287565	50.466850	0.003460	10
+204	-1.035330	102.055027	50.562217	0.004271	10
+205	-1.041597	101.822570	50.657913	0.007967	10
+206	-1.057667	101.590328	50.753882	0.006010	10
+207	-1.054843	102.590328	50.343220	0.005207	10
+208	-1.057821	102.357785	50.438122	0.005769	10
+209	-1.044354	103.357785	50.032533	0.004135	10
+210	-1.092945	104.357785	49.633415	0.005277	10
+211	-1.044589	104.125243	49.725658	0.005117	10
+212	-1.026953	103.892700	49.818244	0.005373	10
+213	-1.065914	103.660157	49.911176	0.006893	10
+214	-1.046306	104.660157	49.513984	0.006123	10
+215	-1.037620	105.660157	49.123064	0.003607	10
+216	-1.047799	105.427615	49.213418	0.005209	10
+217	-1.064716	105.195072	49.304104	0.004938	10
+218	-1.057374	104.962530	49.395126	0.004239	10
+219	-1.037966	104.729987	49.486484	0.005641	10
+220	-1.033473	105.729987	49.095997	0.006131	10
+221	-1.061808	106.350617	48.856732	0.005046	10
+222	-1.056410	107.343164	48.478897	0.004405	10
+223	-1.042456	108.268190	48.131988	0.005877	10
+224	-1.050359	109.268189	47.762505	0.005339	10
+225	-1.074145	109.428503	47.703799	0.005671	10
+226	-1.049068	110.201297	47.422817	0.004359	10
+227	-1.036680	109.968772	47.507012	0.005550	10
+228	-1.078132	109.736229	47.591514	0.006581	10
+229	-1.023108	110.736229	47.230250	0.004184	10
+230	-1.066701	111.714818	46.881992	0.005311	10
+231	-1.032864	111.874369	46.825698	0.005835	10
+232	-1.072627	112.874019	46.476046	0.004122	10
+233	-1.056135	113.874016	46.131458	0.007281	10
+234	-1.042449	114.874011	45.791944	0.005547	10
+235	-1.048958	115.874011	45.457388	0.005268	10
+236	-1.075353	116.874011	45.127686	0.005044	10
+237	-1.088834	116.641468	45.203928	0.005230	10
+238	-1.065470	116.408925	45.280428	0.006398	10
+239	-1.059041	116.176383	45.357188	0.005509	10
+240	-1.097198	117.176383	45.028933	0.009072	10
+241	-1.077372	118.176383	44.705394	0.005603	10
+242	-1.057523	119.176383	44.386471	0.006735	10
+243	-1.058724	120.176383	44.072067	0.005006	10
+244	-1.042251	121.176381	43.762086	0.007233	10
+245	-1.048292	122.176381	43.456434	0.005504	10
+246	-1.041749	123.176381	43.155023	0.005352	10
+247	-1.055296	122.943839	43.224740	0.004597	10
+248	-1.071263	122.711390	43.294655	0.006201	10
+249	-1.055254	122.478848	43.364824	0.006336	10
+250	-1.057337	123.478848	43.064678	0.006552	10
+251	-1.070980	124.478848	42.768658	0.006895	10
+252	-1.022767	124.246305	42.837131	0.004096	10
+253	-1.043562	125.246305	42.544220	0.004099	10
+254	-1.045617	125.013763	42.611976	0.006495	10
+255	-1.058604	126.013763	42.322126	0.005373	10
+256	-1.057310	127.009849	42.037304	0.006859	10
+257	-1.025280	126.777307	42.103454	0.006777	10
+258	-1.068198	127.777307	41.820457	0.006727	10
+259	-1.047978	128.777307	41.541240	0.006080	10
+260	-1.044589	129.777307	41.265726	0.005103	10
+261	-1.053249	130.756792	40.999384	0.006000	10
+262	-1.049362	130.524250	41.062305	0.008031	10
+263	-1.066717	131.524080	40.793133	0.004414	10
+264	-1.053441	132.524080	40.527421	0.006029	10
+265	-1.044862	132.291537	40.588901	0.006233	10
+266	-1.072538	133.291425	40.325864	0.004820	10
+267	-1.069621	133.058934	40.386720	0.009493	10
+268	-1.034644	134.058934	40.126259	0.004998	10
+269	-1.032576	135.058934	39.869137	0.005269	10
+270	-1.038218	134.826392	39.928634	0.003795	10
+271	-1.053505	135.826392	39.674030	0.006648	10
+272	-1.063738	136.826392	39.422653	0.003990	10
+273	-1.047307	136.593849	39.480824	0.003295	10
+274	-1.077255	137.593824	39.231887	0.005523	10
+275	-1.037894	138.593824	38.986064	0.003587	10
+276	-1.098711	138.361496	39.042900	0.006363	11
+277	-1.052702	139.343710	38.803736	0.003750	11
+278	-1.081514	140.343707	38.563233	0.005440	11
+279	-1.067948	140.111165	38.618894	0.005741	10
+280	-1.051271	141.111165	38.380669	0.004431	10
+281	-1.072981	142.111165	38.145366	0.005977	10
+282	-1.065361	141.878623	38.199826	0.003601	10
+283	-1.070777	142.878623	37.966728	0.006900	11
+284	-1.053015	142.646080	38.020679	0.007217	11
+285	-1.065991	143.646080	37.789755	0.005668	11
+286	-1.044275	144.646080	37.561619	0.007006	10
+287	-1.063088	145.646063	37.336226	0.004047	10
+288	-1.049387	146.645906	37.113552	0.004967	10
+289	-1.056588	147.645906	36.893484	0.005949	11
+290	-1.073337	148.645906	36.676010	0.005107	11
+291	-1.060683	148.429499	36.722856	0.006509	10
+292	-1.056503	149.429499	36.507383	0.005638	10
+293	-1.097048	150.429499	36.294425	0.005013	10
+294	-1.065595	151.429499	36.083936	0.004764	10
+295	-1.062112	151.196956	36.132665	0.005501	10
+296	-1.050980	152.196956	35.924044	0.004593	10
+297	-1.061333	153.196956	35.717817	0.003021	10
+298	-1.079852	154.196579	35.514021	0.006221	10
+299	-1.070808	153.964036	35.561222	0.008740	10
+300	-1.039527	153.731494	35.608549	0.005055	10
+301	-1.035847	153.498951	35.656002	0.003298	10
+302	-1.068731	154.498906	35.452842	0.006463	10
+303	-1.062382	155.498901	35.251976	0.004338	10
+304	-1.050945	155.346569	35.282427	0.003632	10
+305	-1.048138	155.114540	35.328912	0.007275	10
+306	-1.052311	156.114346	35.129481	0.003429	10
+307	-1.059078	155.883744	35.175279	0.006070	10
+308	-1.063254	156.883744	34.977536	0.004647	10
+309	-1.060202	157.883657	34.782020	0.004097	10
+310	-1.027501	158.273009	34.706480	0.003632	10
+311	-1.052081	159.271724	34.514204	0.003194	10
+312	-1.055367	160.271551	34.323836	0.003934	10
+313	-1.034643	160.821719	34.219977	0.003966	10
+314	-1.058138	160.727182	34.237779	0.005368	10
+315	-1.071109	160.494639	34.281646	0.004828	10
+316	-1.038042	160.262096	34.325626	0.006067	10
+317	-1.054991	160.979834	34.190245	0.005354	10
+318	-1.040852	161.979834	34.003392	0.004347	10
+319	-1.030186	161.766306	34.043119	0.003485	10
+320	-1.032297	161.533764	34.086488	0.003612	10
+321	-1.046492	162.518928	33.903506	0.006669	10
+322	-1.058367	163.518910	33.719769	0.004293	10
+323	-1.043768	164.518910	33.538010	0.004206	10
+324	-1.025935	164.293387	33.578829	0.006171	10
+325	-1.071901	164.060844	33.621024	0.005047	10
+326	-1.073995	165.060844	33.440325	0.004591	10
+327	-1.063537	165.741096	33.318510	0.004937	10
+328	-1.044631	165.508558	33.360051	0.004164	10
+329	-1.080516	166.504935	33.182780	0.005143	10
+330	-1.081551	167.504934	33.006749	0.006135	10
+331	-1.069349	168.504934	32.832575	0.005595	10
+332	-1.055016	168.272391	32.872914	0.005835	10
+333	-1.068903	169.272391	32.700146	0.006883	10
+334	-1.042369	170.272391	32.529185	0.004593	10
+335	-1.077497	171.272391	32.360002	0.003704	10
+336	-1.053152	172.271641	32.192695	0.005303	10
+337	-1.056500	172.100275	32.221264	0.006670	10
+338	-1.066126	171.867733	32.260114	0.003559	10
+339	-1.033577	171.635191	32.299057	0.004929	10
+340	-1.068063	172.635191	32.132253	0.004672	10
+341	-1.071262	172.402648	32.170888	0.004850	10
+342	-1.079364	172.170154	32.209608	0.004694	10
+343	-1.063828	171.937612	32.248430	0.005862	10
+344	-1.066752	172.927100	32.083886	0.005759	10
+345	-1.029452	172.694557	32.122405	0.003997	10
+346	-1.053489	172.462015	32.161016	0.005480	10
+347	-1.055772	173.462015	31.995632	0.005212	10
+348	-1.084518	174.458642	31.832489	0.005415	10
+349	-1.064561	175.161041	31.718505	0.006927	10
+350	-1.093771	174.928498	31.756151	0.006023	10
+351	-1.073824	175.924390	31.595553	0.005340	10
+352	-1.062918	175.692116	31.632864	0.006320	10
+353	-1.076955	176.692116	31.472854	0.004291	10
+354	-1.056787	176.459573	31.509918	0.005996	10
+355	-1.061794	176.227031	31.547070	0.003578	10
+356	-1.058218	177.217834	31.389380	0.006416	10
+357	-1.057913	178.217780	31.231826	0.004890	10
+358	-1.057260	177.985237	31.268325	0.004623	10
+359	-1.069506	178.952593	31.117051	0.005692	10
+360	-1.076523	178.720050	31.153282	0.003927	10
+361	-1.084241	178.487708	31.189566	0.006774	10
+362	-1.067245	178.255166	31.225966	0.002790	10
+363	-1.042307	178.024466	31.262162	0.003421	10
+364	-1.066052	178.968544	31.114569	0.008564	10
+365	-1.042031	179.968544	30.959746	0.004893	10
+366	-1.053761	179.736003	30.995611	0.003932	10
+367	-1.065416	179.503461	31.031559	0.011471	10
+368	-1.074547	180.503461	30.877559	0.008382	10
+369	-1.054963	181.503461	30.725080	0.006516	10
+370	-1.051302	182.503461	30.574099	0.005494	10
+371	-1.079549	183.503461	30.424595	0.004266	10
+372	-1.048631	183.271277	30.459177	0.004523	10
+373	-1.063676	183.038735	30.493891	0.006107	10
+374	-1.050172	183.583057	30.412758	0.003245	10
+375	-1.081364	184.582899	30.264847	0.006775	10
+376	-1.062615	184.350358	30.299119	0.003154	10
+377	-1.059191	184.122833	30.332728	0.005485	10
+378	-1.052924	184.530929	30.272500	0.005361	10
+379	-1.084571	185.530929	30.125924	0.003229	10
+380	-1.087597	186.514166	29.983182	0.005168	10
+381	-1.075315	186.520839	29.982218	0.005215	10
+382	-1.088837	187.520839	29.838433	0.005893	10
+383	-1.047950	188.520839	29.696020	0.005537	10
+384	-1.048301	189.520839	29.554960	0.004930	10
+385	-1.067684	189.288297	29.587643	0.004448	10
+386	-1.078331	190.269022	29.450295	0.005395	10
+387	-1.029867	190.037557	29.482596	0.003182	10
+388	-1.070335	189.805117	29.515104	0.007907	10
+389	-1.072574	189.572575	29.547699	0.003204	10
+390	-1.033350	190.572496	29.408052	0.004069	10
+391	-1.079043	191.572496	29.269709	0.004714	10
+392	-1.072686	192.572055	29.132721	0.006334	10
+393	-1.059648	192.356301	29.162181	0.002172	10
+394	-1.048864	193.165909	29.051939	0.004305	10
+395	-1.040729	192.939566	29.082676	0.003406	10
+396	-1.071800	192.707103	29.114311	0.005270	10
+397	-1.062504	192.474608	29.146019	0.006012	10
+398	-1.073309	192.242066	29.177803	0.005253	10
+399	-1.050970	193.242066	29.041612	0.005746	10
+400	-1.042804	193.009523	29.073169	0.004839	10
+401	-1.071376	192.776981	29.104794	0.006100	10
+402	-1.047980	192.544438	29.136488	0.005866	10
+403	-1.037831	193.544438	29.000682	0.002824	10
+404	-1.061477	193.311896	29.032150	0.004046	10
+405	-1.026037	193.080235	29.063566	0.003739	10
+406	-1.070593	192.847698	29.095170	0.005931	10
+407	-1.069283	193.847602	28.959760	0.006247	10
+408	-1.028217	194.847524	28.825603	0.006819	10
+409	-1.083992	195.847524	28.692673	0.003643	10
+410	-1.086303	195.614982	28.723475	0.004949	10
+411	-1.046789	196.614901	28.591493	0.003997	10
+412	-1.049284	197.174988	28.518095	0.007037	10
+413	-1.064117	196.942446	28.548523	0.004758	10
+414	-1.044710	196.709903	28.579017	0.005209	10
+415	-1.080342	196.477361	28.609576	0.005220	10
+416	-1.051115	196.250887	28.639400	0.004503	10
+417	-1.063731	196.493840	28.607408	0.004801	10
+418	-1.039414	197.493840	28.476478	0.004515	10
+419	-1.074286	198.493840	28.346741	0.004504	10
+420	-1.089215	198.261493	28.376779	0.005908	10
+421	-1.061089	198.085958	28.399515	0.003901	10
+422	-1.056191	197.853466	28.429685	0.005842	10
+423	-1.072395	198.853466	28.300373	0.005125	10
+424	-1.056196	198.620962	28.330333	0.005257	10
+425	-1.052990	199.620962	28.201921	0.004415	10
+426	-1.053565	200.620918	28.074674	0.004195	10
+427	-1.064147	200.388382	28.104162	0.005190	10
+428	-1.063491	201.388382	27.977788	0.003855	10
+429	-1.070800	202.384873	27.852983	0.003941	10
+430	-1.059326	203.384380	27.728913	0.005239	10
+431	-1.028747	203.190140	27.752938	0.005676	10
+432	-1.051791	204.190137	27.629696	0.003788	10
+433	-1.055247	204.229952	27.624812	0.004288	10
+434	-1.042095	204.799010	27.555192	0.005715	10
+435	-1.073351	204.567240	27.583505	0.005997	10
+436	-1.052583	205.567240	27.461759	0.003434	10
+437	-1.091908	206.543614	27.343923	0.005992	10
+438	-1.066014	207.534754	27.225334	0.006110	10
+439	-1.046403	207.302216	27.253065	0.006363	10
+440	-1.026403	207.069673	27.280852	0.004524	10
+441	-1.037143	207.978370	27.172588	0.003876	10
+442	-1.057033	207.745829	27.200212	0.004419	10
+443	-1.091425	208.745818	27.081821	0.003824	10
+444	-1.049776	208.513276	27.109260	0.005087	10
+445	-1.064619	208.280733	27.136755	0.006574	10
+446	-1.040384	209.280733	27.018913	0.005133	10
+447	-1.035892	209.048191	27.046225	0.005594	10
+448	-1.040773	209.071663	27.043465	0.006009	10
+449	-1.079235	210.071661	26.926430	0.004568	10
+450	-1.069110	209.839124	26.953555	0.006197	10
+451	-1.031891	210.819909	26.839520	0.004585	10
+452	-1.043402	211.819909	26.724240	0.004215	10
+453	-1.064299	211.587456	26.750948	0.004913	10
+454	-1.058455	212.502624	26.646103	0.004695	10
+455	-1.052915	213.502624	26.532475	0.004213	10
+456	-1.045507	213.458763	26.537439	0.005974	10
+457	-1.069310	214.458760	26.424734	0.007673	10
+458	-1.066880	214.226218	26.450857	0.006396	10
+459	-1.083554	214.699030	26.397796	0.007744	10
+460	-1.055435	215.699030	26.286272	0.009389	10
+461	-1.088050	216.699030	26.175685	0.005297	10
+462	-1.082029	217.699030	26.066026	0.006620	10
+463	-1.028862	218.699030	25.957281	0.005279	10
+464	-1.052367	218.466487	25.982488	0.006574	10
+465	-1.050994	219.466487	25.874437	0.004852	10
+466	-1.057238	219.791037	25.839562	0.005082	10
+467	-1.047096	219.558495	25.864541	0.003936	10
+468	-1.054754	220.523840	25.761163	0.003274	10
+469	-1.059198	221.523806	25.654946	0.006741	10
+470	-1.045931	221.291264	25.679568	0.005299	10
+471	-1.032517	222.291264	25.574017	0.003220	10
+472	-1.077229	223.291263	25.469331	0.005465	10
+473	-1.086867	223.058722	25.493598	0.005681	10
+474	-1.036434	223.127442	25.486422	0.006362	10
+475	-1.063233	224.127442	25.382450	0.002425	10
+476	-1.052212	225.118389	25.280253	0.003818	10
+477	-1.041069	226.118374	25.177954	0.005593	10
+478	-1.053535	225.885832	25.201669	0.005276	10
+479	-1.057172	226.885709	25.100015	0.005032	10
+480	-1.059989	226.788869	25.109825	0.005072	11
+481	-1.062814	226.556326	25.133412	0.005067	11
+482	-1.081960	227.453260	25.042678	0.007544	11
+483	-1.081022	227.264540	25.061714	0.004940	10
+484	-1.072614	228.264540	24.961172	0.005775	10
+485	-1.051080	229.259552	24.861928	0.004817	10
+486	-1.070330	229.027028	24.885050	0.003031	11
+487	-1.032693	228.800317	24.907635	0.004512	11
+488	-1.062083	229.576829	24.830448	0.005329	11
+489	-1.064241	229.835258	24.804866	0.005242	11
+490	-1.055834	229.602715	24.827883	0.004623	10
+491	-1.042650	230.602715	24.729205	0.007703	10
+492	-1.033890	230.370173	24.752082	0.002694	10
+493	-1.086925	231.370173	24.654003	0.006531	11
+494	-1.079892	232.369339	24.556780	0.002533	11
+495	-1.048068	232.136995	24.579319	0.006433	11
+496	-1.044961	233.136991	24.482603	0.003355	10
+497	-1.048332	232.904461	24.505024	0.004430	10
+498	-1.085451	232.671922	24.527488	0.003833	10
+499	-1.053572	232.439379	24.549993	0.006075	10
+Time spent in resolution 1 (ITK initialisation and iterating): 5.588 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 1:
+( SP_a 6221.935021 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.232543 )
+( SigmoidScale 0.000000 )
+
+
+Resolution: 2
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 2, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 2, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 2, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 2, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 2, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 2, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 2, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 2, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 2, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 2, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 2, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 2, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 2, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 2, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 2, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 2, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 2, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 2, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 2, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 2, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 2, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 2, does not exist at all.
+  The default value "100000" is used instead.
+Elastix initialization of all components (for this resolution) took: 4 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 0 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+  Computing JacobianTerms ...
+  Estimated band size covariance matrix: 74
+  Used band size covariance matrix: 74
+  Computing the Jacobian terms took 0 Seconds
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 0 Seconds
+Automatic parameter estimation took 0 Seconds
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-0.920152	0.000000	224.422907	0.010196	216
+1	-0.945961	0.000000	224.422907	0.010480	10
+2	-0.915214	0.000000	224.422907	0.007837	10
+3	-0.924254	0.000000	224.422907	0.008939	10
+4	-0.905330	0.999988	214.221987	0.008092	10
+5	-0.898723	0.232813	221.962165	0.010811	10
+6	-0.900218	1.232518	211.981431	0.010100	10
+7	-0.945640	0.465718	219.553855	0.009067	10
+8	-0.926694	1.465718	209.781016	0.010788	10
+9	-0.911081	0.698391	217.199561	0.008154	10
+10	-0.936670	1.698386	207.630669	0.008097	10
+11	-0.928357	2.695258	198.895533	0.008728	10
+12	-0.967947	3.695243	190.841657	0.009838	10
+13	-0.943876	4.671093	183.587080	0.010822	10
+14	-0.972109	5.671093	176.703707	0.010615	10
+15	-0.937348	6.671093	170.317848	0.007609	10
+16	-0.906957	6.209080	173.209862	0.010769	10
+17	-0.956130	7.209078	167.069659	0.010796	10
+18	-0.955020	8.209078	161.349873	0.008290	10
+19	-0.979577	7.441752	165.702911	0.009230	10
+20	-0.944736	6.677051	170.281184	0.006535	10
+21	-0.954094	6.954449	168.591451	0.010304	10
+22	-0.932109	7.954391	162.769130	0.006867	10
+23	-0.918612	8.922580	157.502494	0.008878	10
+24	-0.948346	9.871315	152.662139	0.012102	10
+25	-0.933636	10.063812	151.716119	0.009388	10
+26	-0.947328	11.063745	146.984733	0.008568	10
+27	-0.929982	10.297456	150.583517	0.007931	10
+28	-0.945205	11.166755	146.514036	0.009336	10
+29	-0.924774	12.166754	142.096541	0.012176	10
+30	-0.951885	11.415611	145.389240	0.010249	10
+31	-0.924807	11.215422	146.292698	0.010431	10
+32	-0.960984	12.215422	141.888338	0.006568	10
+33	-0.956912	11.450090	145.234761	0.008354	10
+34	-0.913735	11.957320	142.999522	0.006855	10
+35	-0.988742	11.202437	146.351687	0.011252	10
+36	-0.938408	12.202433	141.943848	0.008508	10
+37	-0.956069	13.202433	137.793738	0.010555	10
+38	-0.955320	14.202426	133.879438	0.010741	10
+39	-0.941279	15.198415	130.195786	0.008902	10
+40	-0.965306	16.198414	126.695751	0.012575	10
+41	-0.973674	17.198414	123.378970	0.011067	10
+42	-0.972788	17.717599	121.724519	0.007578	10
+43	-0.947134	18.717569	118.659857	0.009310	10
+44	-0.940243	19.682488	115.845448	0.007462	10
+45	-0.948711	18.915368	118.071842	0.013209	10
+46	-0.966400	19.915368	115.186084	0.007813	10
+47	-0.952140	20.854199	112.602347	0.007376	10
+48	-0.954913	20.087648	114.703109	0.007433	10
+49	-0.949375	21.074409	112.013007	0.008316	10
+50	-0.943435	20.307836	114.091695	0.009661	10
+51	-0.949607	19.544305	116.240272	0.009019	10
+52	-0.961401	20.542593	113.446963	0.009793	10
+53	-0.972900	21.384987	111.192227	0.009947	10
+54	-0.954967	20.750068	112.883195	0.010288	11
+55	-0.958440	21.749503	110.244113	0.008972	10
+56	-0.965170	22.745009	107.735286	0.009549	10
+57	-0.958491	23.744393	105.328974	0.007327	10
+58	-0.966610	24.734773	103.048091	0.009849	10
+59	-0.955626	25.734750	100.843185	0.013957	10
+60	-0.961100	26.734750	98.730611	0.009524	10
+61	-0.964144	27.734750	96.704734	0.009977	10
+62	-0.940561	27.087058	98.007264	0.008028	10
+63	-0.948124	28.087057	96.010666	0.011833	10
+64	-0.980181	27.321956	97.530841	0.010242	10
+65	-0.963924	26.557587	99.098406	0.011826	10
+66	-0.964008	27.557587	97.057563	0.008534	10
+67	-0.951292	28.557573	95.099110	0.008354	10
+68	-0.955399	27.792082	96.591103	0.008354	10
+69	-0.953358	28.792029	94.651315	0.008365	10
+70	-0.956259	29.784240	92.802040	0.009217	10
+71	-0.973431	29.027191	94.206390	0.013005	10
+72	-0.976606	30.027173	92.360222	0.008468	10
+73	-0.986806	31.027173	90.584993	0.009393	10
+74	-0.907443	30.356783	91.767451	0.010149	10
+75	-0.956269	31.356481	90.015237	0.008089	10
+76	-0.943364	30.608417	91.320008	0.011259	10
+77	-0.959188	31.595858	89.605555	0.009130	10
+78	-0.963556	32.595858	87.933680	0.009440	10
+79	-0.949006	31.841491	89.189025	0.005639	10
+80	-0.934282	31.598145	89.601660	0.010474	10
+81	-0.969000	31.737054	89.365649	0.009734	10
+82	-0.967274	32.737052	87.702635	0.009849	10
+83	-0.967989	33.737052	86.100381	0.009122	10
+84	-0.966179	34.736757	84.556069	0.005964	10
+85	-0.955818	33.970099	85.735356	0.010019	10
+86	-0.949419	34.874188	84.348090	0.008640	10
+87	-0.952515	35.874188	82.865026	0.007782	10
+88	-0.947366	36.846573	81.472087	0.011956	10
+89	-0.965674	36.079247	82.567330	0.007774	10
+90	-0.966833	35.311938	83.692397	0.006988	10
+91	-0.957223	36.306261	82.240246	0.011365	10
+92	-0.957986	35.539784	83.355130	0.011087	10
+93	-0.946335	34.772458	84.501943	0.009173	10
+94	-0.932888	35.772458	83.013511	0.007764	10
+95	-0.986947	36.757023	81.598406	0.007796	10
+96	-0.931244	37.756815	80.209948	0.007989	10
+97	-0.963227	37.204933	80.970474	0.006850	10
+98	-0.963237	36.437626	82.052156	0.009387	10
+99	-0.976597	35.670802	83.162420	0.010888	10
+100	-0.960104	34.903603	84.303709	0.009378	10
+101	-0.956307	34.136276	85.476955	0.008980	10
+102	-0.975558	35.136276	83.954288	0.011221	10
+103	-0.971004	36.133743	82.488575	0.010620	10
+104	-0.977626	35.378825	83.593105	0.008265	10
+105	-0.973094	36.378077	82.137312	0.011915	10
+106	-0.967326	35.610766	83.250614	0.009810	10
+107	-0.978287	36.610766	81.805561	0.010711	10
+108	-0.957736	37.610759	80.409828	0.008425	10
+109	-0.963198	38.610759	79.060914	0.008681	10
+110	-0.978396	39.591174	77.781643	0.011082	10
+111	-0.983930	40.591174	76.518773	0.010264	10
+112	-0.952264	41.587508	75.300666	0.010165	10
+113	-0.944486	42.585953	74.118274	0.006831	10
+114	-0.962204	41.842466	74.995164	0.010202	10
+115	-0.976962	42.842461	73.820479	0.012203	10
+116	-0.953947	43.817480	72.710032	0.008715	10
+117	-1.001257	43.050153	73.581105	0.009566	10
+118	-0.980343	44.050153	72.449960	0.010579	10
+119	-0.971610	45.049684	71.353575	0.007736	10
+120	-0.945864	44.283732	72.190742	0.009419	10
+121	-0.951228	43.516488	73.049250	0.006609	10
+122	-0.968807	44.514727	71.936208	0.009915	10
+123	-0.952455	45.514564	70.854874	0.009209	10
+124	-0.948640	44.747237	71.681811	0.006470	10
+125	-0.966625	43.979913	72.528275	0.006342	10
+126	-0.940059	43.406644	73.173834	0.008846	10
+127	-0.941603	42.639317	74.056122	0.006450	10
+128	-0.929006	43.638151	72.911755	0.008387	10
+129	-0.963267	43.563743	72.995784	0.007640	10
+130	-0.957967	44.522135	71.928075	0.008890	10
+131	-0.980577	44.440055	72.018292	0.010950	10
+132	-0.981052	45.440055	70.934334	0.013711	10
+133	-0.959547	44.672728	71.763138	0.011258	10
+134	-1.002602	45.672728	70.686789	0.008482	10
+135	-0.979929	44.905403	71.509783	0.011953	10
+136	-0.970359	44.138076	72.352168	0.009589	10
+137	-0.960980	45.138076	71.258212	0.010943	10
+138	-0.980343	44.370750	72.094645	0.006881	10
+139	-0.994729	43.604002	72.950295	0.011741	10
+140	-0.968484	44.551834	71.895487	0.010183	10
+141	-0.976579	45.551834	70.815194	0.008867	10
+142	-1.011120	44.784507	71.641200	0.011670	10
+143	-0.996171	44.017290	72.486581	0.006905	10
+144	-0.974335	43.255028	73.346494	0.009587	10
+145	-0.943923	44.251339	72.226580	0.009367	10
+146	-0.979761	45.251339	71.136389	0.007261	10
+147	-0.978080	44.484013	71.969949	0.007134	10
+148	-0.975275	43.722949	72.816229	0.009671	10
+149	-0.954469	43.079062	73.547909	0.006863	10
+150	-0.983472	44.074399	72.422967	0.009293	10
+151	-0.960130	43.542545	73.019759	0.012612	10
+152	-0.991054	42.775219	73.898313	0.010182	10
+153	-0.963119	42.007896	74.798261	0.007017	10
+154	-0.974106	41.240596	75.720372	0.007723	10
+155	-0.974583	40.723234	76.355057	0.010240	10
+156	-0.966048	41.722927	75.138091	0.007629	10
+157	-0.986562	42.722803	73.959098	0.006406	10
+158	-0.959995	41.955973	74.859951	0.011063	10
+159	-0.980051	42.955961	73.689472	0.007691	10
+160	-0.961124	43.955961	72.555020	0.008568	10
+161	-0.966594	44.955961	71.454967	0.011531	10
+162	-0.977051	44.188745	72.295931	0.010135	10
+163	-0.968228	45.188745	71.203662	0.009508	10
+164	-0.974859	44.421419	72.038808	0.011225	10
+165	-0.994439	43.654434	72.893393	0.009284	10
+166	-0.968427	44.654419	71.783150	0.006003	10
+167	-0.966496	43.891278	72.627342	0.006535	10
+168	-0.959417	44.605315	71.836879	0.008329	10
+169	-0.958428	45.593859	70.770505	0.010454	10
+170	-0.955527	46.592531	69.724879	0.007847	10
+171	-0.967042	47.591854	68.709048	0.010997	11
+172	-0.987055	48.166726	68.137980	0.007601	11
+173	-0.978737	49.160982	67.172393	0.008687	10
+174	-0.969063	50.160472	66.228918	0.009880	10
+175	-0.973387	49.393145	66.950852	0.011667	10
+176	-0.951607	49.495752	66.853405	0.008735	10
+177	-0.984763	50.495751	65.918338	0.006926	10
+178	-0.941506	50.019307	66.360561	0.008391	10
+179	-0.937295	49.511112	66.838841	0.008185	10
+180	-0.976922	48.755820	67.562550	0.008127	10
+181	-0.961005	49.754891	66.608555	0.009049	10
+182	-0.993093	48.987820	67.338589	0.007558	10
+183	-0.976144	48.220504	68.085044	0.010034	10
+184	-0.965032	49.172013	67.161834	0.007842	10
+185	-0.976598	48.478943	67.831790	0.013782	10
+186	-0.979530	47.711616	68.589291	0.010690	10
+187	-0.957824	48.711616	67.605391	0.007395	10
+188	-0.939611	47.944292	68.357814	0.007267	10
+189	-0.962703	48.943769	67.380999	0.009060	10
+190	-0.963622	48.176449	68.128404	0.007087	10
+191	-0.983075	49.170521	67.163261	0.010012	10
+192	-0.987545	48.403203	67.905814	0.009664	10
+193	-0.987313	49.193178	67.141582	0.006780	10
+194	-0.939591	50.192671	66.198964	0.009033	10
+195	-0.968959	49.426186	66.919442	0.006649	10
+196	-0.964629	50.270983	66.126225	0.011645	10
+197	-0.975073	51.213312	65.263328	0.006989	10
+198	-1.003077	52.213015	64.372175	0.008844	10
+199	-0.969428	51.649950	64.871085	0.007174	10
+200	-0.970590	50.884335	65.562003	0.008300	10
+201	-0.998795	51.853577	64.689769	0.011073	10
+202	-0.988134	51.086251	65.378363	0.009252	10
+203	-1.010567	52.086251	64.483826	0.011706	10
+204	-0.980396	53.086251	63.613437	0.012477	10
+205	-0.990272	52.318924	64.279190	0.010561	10
+206	-0.987135	53.318924	63.414280	0.009914	10
+207	-0.942685	52.554770	64.073085	0.008177	10
+208	-1.008508	51.791770	64.744696	0.009536	10
+209	-0.994171	52.739764	63.912342	0.011083	10
+210	-0.997219	53.739763	63.057211	0.007957	10
+211	-0.957168	52.976266	63.708014	0.008100	10
+212	-0.975569	53.855897	62.959383	0.009526	10
+213	-0.972107	54.853527	62.131337	0.008051	10
+214	-0.965152	54.256026	62.624633	0.010221	10
+215	-0.966594	55.256026	61.803392	0.007001	10
+216	-0.982987	56.256017	61.003418	0.007798	10
+217	-0.988140	55.494726	61.610535	0.009139	10
+218	-0.983773	54.727422	62.234801	0.007314	10
+219	-0.982993	55.727422	61.423686	0.009101	10
+220	-0.966627	55.322400	61.749644	0.012885	10
+221	-0.967624	54.555073	62.376765	0.007752	10
+222	-0.974735	55.555073	61.561969	0.007781	10
+223	-0.976960	54.791440	62.182234	0.006123	10
+224	-1.003498	55.791128	61.372728	0.009172	10
+225	-0.971362	56.776267	60.595362	0.007402	10
+226	-0.991589	57.539938	60.006172	0.007318	10
+227	-0.955375	56.773360	60.597627	0.008581	10
+228	-0.994081	57.602855	59.958141	0.007348	10
+229	-0.990666	57.643382	59.927243	0.008257	10
+230	-0.985644	56.876394	60.517453	0.009363	10
+231	-0.957531	57.876394	59.750209	0.007503	10
+232	-0.952326	58.876388	59.002180	0.008667	10
+233	-0.968930	59.876382	58.272649	0.008347	10
+234	-0.994056	59.109056	58.830815	0.006567	10
+235	-1.016716	58.386065	59.366603	0.011731	10
+236	-0.955850	59.384264	58.629398	0.008224	10
+237	-0.985143	60.384264	57.908996	0.009843	10
+238	-0.963236	59.621399	58.456949	0.006690	10
+239	-0.996178	58.905993	58.980320	0.009717	10
+240	-0.974605	59.903622	58.253029	0.010940	10
+241	-0.957851	59.136297	58.810816	0.009441	10
+242	-0.948508	60.136297	58.085976	0.007757	10
+243	-0.975070	61.136096	57.378927	0.010526	10
+244	-0.990734	61.422928	57.179248	0.011565	10
+245	-0.971114	60.658410	57.714583	0.009511	10
+246	-0.983653	61.658409	57.016353	0.010393	10
+247	-0.992942	62.658409	56.334815	0.008591	10
+248	-0.986556	63.658408	55.669379	0.005312	10
+249	-0.962961	64.509394	55.115360	0.008982	10
+250	-0.994685	63.750758	55.608718	0.008623	10
+251	-0.951023	64.750744	54.960235	0.009364	10
+252	-0.975843	63.990741	55.451700	0.009573	10
+253	-0.982634	64.990740	54.806844	0.006886	10
+254	-0.961942	65.979959	54.183528	0.009407	10
+255	-0.955659	66.979959	53.567666	0.012781	10
+256	-0.964561	67.979959	52.965647	0.010456	10
+257	-0.987205	68.910834	52.417277	0.010625	10
+258	-0.950678	69.910694	51.840777	0.007750	10
+259	-0.980514	70.910694	51.276743	0.008862	10
+260	-0.976806	70.673048	51.409669	0.010841	10
+261	-0.980342	69.905721	51.843613	0.011763	10
+262	-0.968174	70.905721	51.279518	0.012630	10
+263	-0.994378	71.905434	50.727722	0.007397	10
+264	-1.005645	72.905433	50.187523	0.011818	10
+265	-1.020020	73.905178	49.658840	0.008334	10
+266	-0.953568	73.137878	50.063600	0.008366	10
+267	-0.959343	74.135241	49.538751	0.009177	10
+268	-0.941520	73.425064	49.911335	0.008571	10
+269	-0.983971	72.877975	50.202202	0.007301	10
+270	-0.967404	73.877975	49.673078	0.008630	10
+271	-0.976271	74.877972	49.154993	0.008171	10
+272	-0.944383	75.877972	48.647602	0.012564	10
+273	-0.995781	75.110649	49.035992	0.007274	10
+274	-0.958752	75.469718	48.853476	0.008804	10
+275	-0.966334	74.936388	49.125062	0.009320	10
+276	-0.964042	75.936092	48.618434	0.007242	10
+277	-0.975311	75.173030	49.004186	0.008476	10
+278	-0.971590	76.173028	48.499889	0.007375	10
+279	-0.969811	77.168147	48.008251	0.007650	10
+280	-0.975854	78.168143	47.524143	0.008893	10
+281	-0.971447	79.166575	47.050436	0.007723	10
+282	-0.961190	80.164383	46.586367	0.010597	10
+283	-0.984218	81.164197	46.130456	0.009585	10
+284	-0.971181	82.164182	45.683307	0.010330	10
+285	-1.008050	81.498316	45.980083	0.009461	10
+286	-0.960866	81.030866	46.190738	0.006556	10
+287	-0.987614	80.265625	46.539791	0.008518	10
+288	-0.959405	81.265611	46.084710	0.008972	10
+289	-0.984485	80.498286	46.433110	0.009532	10
+290	-0.977573	79.741638	46.781858	0.007951	10
+291	-0.964680	80.741457	46.322130	0.009231	10
+292	-0.977619	81.741450	45.871272	0.009681	10
+293	-0.984987	80.974124	46.216441	0.007326	10
+294	-0.985955	81.974124	45.767625	0.007801	10
+295	-0.973952	81.247961	46.092665	0.008507	10
+296	-0.978336	82.202106	45.666520	0.006898	10
+297	-0.970285	81.543374	45.959879	0.007901	10
+298	-0.968862	81.113892	46.153182	0.007749	10
+299	-0.971219	82.113840	45.705611	0.009875	10
+300	-0.931612	81.416497	46.016815	0.009161	10
+301	-0.986543	82.375345	45.589991	0.007681	10
+302	-0.972068	81.608019	45.930923	0.008212	10
+303	-0.958380	80.840693	46.276993	0.011483	10
+304	-0.947314	80.073483	46.628264	0.006964	10
+305	-0.956674	79.313659	46.981449	0.006285	10
+306	-0.969871	80.306187	46.521157	0.008636	10
+307	-0.983986	81.306156	46.066446	0.006111	10
+308	-0.998512	80.547637	46.410544	0.007125	10
+309	-0.952615	79.918426	46.699906	0.010927	10
+310	-0.979594	80.917022	46.242335	0.008093	10
+311	-1.020544	80.270071	46.537748	0.009494	10
+312	-0.982440	79.502766	46.893048	0.011538	10
+313	-0.963231	80.502766	46.431060	0.007651	10
+314	-0.968170	81.502353	45.978272	0.010098	10
+315	-0.987031	82.502352	45.534048	0.009694	10
+316	-0.960179	83.502348	45.098327	0.009950	10
+317	-0.965079	82.735022	45.431918	0.006730	10
+318	-0.978921	83.735021	44.998139	0.006283	10
+319	-0.986950	82.968424	45.329927	0.009091	10
+320	-0.984235	82.385626	45.585457	0.006792	10
+321	-0.963647	81.869134	45.814336	0.008437	10
+322	-0.982652	81.163167	46.130922	0.011099	10
+323	-0.963133	82.163167	45.683757	0.009092	10
+324	-0.983837	83.163167	45.245178	0.006008	10
+325	-0.982159	84.160512	44.816072	0.008408	10
+326	-0.957689	83.848720	44.949343	0.010018	10
+327	-0.978918	83.081395	45.280725	0.009403	10
+328	-0.984799	84.081394	44.849815	0.010708	10
+329	-0.980933	83.315762	45.178993	0.009151	10
+330	-0.958330	82.576836	45.501304	0.007188	10
+331	-0.991003	83.373066	45.154188	0.009982	10
+332	-0.971348	84.365443	44.728906	0.008241	10
+333	-0.992663	85.365443	44.308385	0.009705	10
+334	-0.976416	84.598117	44.630351	0.006768	10
+335	-0.991069	85.596833	44.212205	0.011406	10
+336	-0.971734	86.551356	43.819820	0.005941	10
+337	-0.968508	85.786078	44.133853	0.007985	10
+338	-0.962931	85.018894	44.453218	0.009134	10
+339	-0.988721	85.564036	44.225812	0.007655	10
+340	-0.996246	84.797160	44.546385	0.011666	10
+341	-0.959770	85.797160	44.129273	0.008153	10
+342	-0.975533	86.797160	43.719900	0.007839	10
+343	-0.980681	87.787939	43.321724	0.009190	10
+344	-0.961334	87.539522	43.420875	0.009001	10
+345	-0.972126	88.470255	43.051704	0.009433	10
+346	-0.992374	89.310183	42.723898	0.007923	10
+347	-0.977939	88.542868	43.023166	0.011832	10
+348	-0.979234	89.541910	42.634337	0.006205	10
+349	-0.978473	88.774655	42.932324	0.008263	10
+350	-0.989681	89.774357	42.544874	0.010238	10
+351	-0.996640	89.007052	42.841626	0.009340	10
+352	-0.975415	89.706890	42.570801	0.009730	10
+353	-0.950726	88.939564	42.867926	0.009120	10
+354	-0.977808	88.215547	43.152108	0.008669	10
+355	-0.988490	87.448224	43.457429	0.010329	10
+356	-1.000856	86.680899	43.767103	0.010302	10
+357	-0.972996	87.680898	43.364392	0.008110	10
+358	-0.961603	88.680112	42.969331	0.006788	10
+359	-0.962562	89.554793	42.629369	0.006950	10
+360	-1.011460	89.062105	42.820197	0.008176	10
+361	-0.957541	88.294786	43.120822	0.010565	11
+362	-0.976500	89.280598	42.735360	0.008307	11
+363	-1.004053	88.513272	43.034793	0.008981	11
+364	-0.992411	87.745946	43.338453	0.006626	10
+365	-0.969042	88.745946	42.943555	0.010348	10
+366	-0.998580	87.979682	43.245502	0.006860	10
+367	-0.976410	87.212367	43.552148	0.008332	10
+368	-0.989884	88.181809	43.165442	0.005829	11
+369	-0.963809	88.695727	42.963215	0.009450	11
+370	-0.991161	89.694507	42.575564	0.007430	10
+371	-0.991325	90.617754	42.223400	0.008410	10
+372	-0.968794	89.850497	42.515651	0.007164	10
+373	-0.983251	90.846851	42.136913	0.008652	10
+374	-0.965403	90.079537	42.427986	0.011194	10
+375	-0.978937	91.079537	42.049433	0.006953	10
+376	-0.975674	92.067912	41.681861	0.009005	10
+377	-0.961996	92.635152	41.473795	0.010031	10
+378	-0.952624	91.884216	41.749690	0.008186	10
+379	-0.961311	91.394614	41.931556	0.005994	10
+380	-0.993176	92.392210	41.562653	0.011391	10
+381	-0.951650	92.962418	41.354695	0.009809	10
+382	-0.963485	93.955613	40.997398	0.007409	10
+383	-0.985388	94.955546	40.643860	0.006650	10
+384	-0.964764	94.302755	40.873967	0.007239	10
+385	-0.975631	94.396968	40.840597	0.007846	10
+386	-0.968867	95.396953	40.489729	0.011890	10
+387	-0.950271	96.396933	40.144840	0.010742	10
+388	-0.976450	95.629607	40.408959	0.011133	10
+389	-0.978423	95.943277	40.300573	0.006862	10
+390	-0.986801	95.464849	40.466124	0.006475	10
+391	-0.962999	95.715233	40.379314	0.011233	10
+392	-0.991702	94.953502	40.644577	0.011466	10
+393	-0.959751	95.953502	40.297049	0.010372	10
+394	-0.995914	96.953502	39.955414	0.009150	10
+395	-0.997016	96.207278	40.209798	0.009071	10
+396	-0.989650	97.207278	39.869635	0.010551	10
+397	-0.973867	98.207176	39.535212	0.009955	10
+398	-0.990664	99.205588	39.206838	0.011294	10
+399	-0.975265	98.438433	39.458664	0.007854	10
+400	-0.977878	97.902013	39.636680	0.008002	10
+401	-0.980830	98.902013	39.306104	0.007329	10
+402	-0.983950	99.902013	38.980997	0.006845	10
+403	-1.017332	99.754078	39.028752	0.009182	10
+404	-0.990423	100.610071	38.754036	0.007269	10
+405	-0.961894	101.606434	38.439101	0.007106	10
+406	-0.994795	102.566432	38.140464	0.009804	10
+407	-0.981529	103.566431	37.834278	0.011034	10
+408	-0.989020	102.932275	38.027875	0.010697	10
+409	-0.976090	103.932275	37.723487	0.005590	10
+410	-0.958794	104.916928	37.428494	0.009246	10
+411	-0.976036	104.589198	37.526166	0.007910	10
+412	-0.982820	105.589198	37.229725	0.008515	10
+413	-0.967328	106.589198	36.937931	0.008205	10
+414	-0.956812	107.580320	36.653207	0.008271	10
+415	-0.976196	106.813006	36.873251	0.007364	10
+416	-0.998010	107.404286	36.703456	0.006432	10
+417	-0.970432	106.877201	36.854740	0.010237	10
+418	-0.982420	106.651347	36.919947	0.010843	10
+419	-0.992882	105.884044	37.143213	0.011859	10
+420	-0.961712	105.116718	37.369201	0.010561	10
+421	-1.001144	104.371819	37.591231	0.008751	10
+422	-0.974039	103.604494	37.822721	0.008564	10
+423	-0.976439	102.837173	38.057079	0.008029	10
+424	-0.993883	103.837169	37.752226	0.010352	10
+425	-0.976778	103.177508	37.952775	0.005880	10
+426	-0.971403	102.410363	38.188698	0.008527	10
+427	-0.969987	101.975551	38.323724	0.008278	10
+428	-0.974242	102.975551	38.014601	0.007189	10
+429	-0.974953	103.975345	37.710486	0.009380	10
+430	-0.983283	104.282262	37.618103	0.006881	10
+431	-0.968774	105.281963	37.320302	0.012843	10
+432	-0.985893	106.281962	37.027093	0.012560	10
+433	-1.001345	107.281962	36.738455	0.008028	10
+434	-0.975216	108.281962	36.454282	0.009627	10
+435	-0.984805	107.595135	36.648984	0.010141	10
+436	-0.990182	108.528238	36.384970	0.008716	10
+437	-0.991850	107.760912	36.601799	0.007062	10
+438	-0.975933	107.019276	36.813839	0.006813	10
+439	-0.981241	106.489834	36.966720	0.011890	10
+440	-0.939449	107.489383	36.679148	0.008108	10
+441	-0.949610	108.485951	36.396852	0.010043	10
+442	-0.984897	107.718624	36.613824	0.009777	10
+443	-0.965995	108.718624	36.331568	0.009600	10
+444	-0.972373	107.951299	36.547759	0.007543	10
+445	-0.979063	108.950894	36.266630	0.010666	10
+446	-0.974759	109.950546	35.989778	0.009343	10
+447	-1.001205	110.947037	35.717976	0.007692	10
+448	-0.993288	110.468134	35.848086	0.008069	10
+449	-0.980816	111.117609	35.671862	0.006523	10
+450	-0.958698	111.620431	35.536614	0.009436	10
+451	-0.974746	112.603243	35.275200	0.007844	10
+452	-0.995658	113.603016	35.013191	0.011531	10
+453	-0.964404	112.874545	35.203713	0.006360	10
+454	-0.984949	113.874328	34.942758	0.008595	10
+455	-0.959904	113.107189	35.142643	0.009902	10
+456	-1.010963	112.484148	35.306672	0.009664	10
+457	-0.974159	111.716910	35.510780	0.009654	10
+458	-0.993894	112.716908	35.245214	0.009292	10
+459	-0.995731	111.949588	35.448632	0.008022	10
+460	-0.989299	111.188429	35.652750	0.010194	10
+461	-1.018042	110.686560	35.788626	0.007939	10
+462	-0.993996	110.316824	35.889393	0.009091	10
+463	-0.965746	111.300713	35.622492	0.007074	10
+464	-1.009749	110.533392	35.830301	0.009044	10
+465	-0.985457	111.533351	35.559963	0.008754	10
+466	-0.986399	112.480474	35.307644	0.011212	10
+467	-0.993719	113.480474	35.045095	0.008513	10
+468	-0.960411	112.713148	35.246205	0.009762	10
+469	-0.974222	113.713148	34.984566	0.007691	10
+470	-0.991415	112.957648	35.181874	0.007011	10
+471	-0.953908	112.441408	35.317980	0.014211	10
+472	-0.983648	111.674082	35.522243	0.006731	10
+473	-0.983616	112.670334	35.257494	0.006790	10
+474	-0.973702	113.665760	34.996877	0.008488	10
+475	-0.966267	114.665510	34.738977	0.009061	10
+476	-0.974725	115.665477	34.484796	0.009692	10
+477	-0.974496	116.665477	34.234299	0.010440	10
+478	-0.997018	115.898170	34.426180	0.011407	10
+479	-0.970988	116.898170	34.176531	0.008789	10
+480	-0.995069	117.886774	33.933260	0.009670	10
+481	-1.009950	118.886774	33.690684	0.009282	10
+482	-0.981896	119.883188	33.452402	0.007519	10
+483	-0.952328	119.115862	33.635600	0.008790	10
+484	-0.972073	120.086041	33.404304	0.010220	10
+485	-1.028020	121.086040	33.169205	0.009660	10
+486	-0.935521	122.086040	32.937392	0.007535	10
+487	-0.972414	121.318714	33.114978	0.009026	10
+488	-0.953597	122.311393	32.885599	0.005935	10
+489	-0.982449	122.374440	32.871138	0.008529	10
+490	-0.989220	121.617660	33.045564	0.010070	10
+491	-0.956616	122.585888	32.822731	0.007370	10
+492	-0.970258	123.585331	32.595845	0.007243	10
+493	-0.998877	122.818006	32.769756	0.011878	10
+494	-0.985734	122.108907	32.932129	0.006711	10
+495	-0.957381	122.452866	32.853168	0.011189	10
+496	-0.983169	123.450799	32.626203	0.007564	10
+497	-0.976470	122.683473	32.800439	0.008506	10
+498	-0.973796	123.208747	32.680965	0.008481	10
+499	-0.976959	124.208575	32.455942	0.007870	10
+Time spent in resolution 2 (ITK initialisation and iterating): 5.590 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 2:
+( SP_a 4712.881039 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.767326 )
+( SigmoidScale 0.000002 )
+
+
+Resolution: 3
+WARNING: The parameter "ShowExactMetricValue", requested at entry number 3, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "CheckNumberOfSamples", requested at entry number 3, does not exist at all.
+  The default value "true" is used instead.
+Setting the fixed masks took: 0 ms.
+Setting the moving masks took: 0 ms.
+WARNING: The parameter "NumberOfFixedHistogramBins", requested at entry number 3, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "NumberOfMovingHistogramBins", requested at entry number 3, does not exist at all.
+  The default value "32" is used instead.
+WARNING: The parameter "FixedLimitRangeRatio", requested at entry number 3, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "MovingLimitRangeRatio", requested at entry number 3, does not exist at all.
+  The default value "0.01" is used instead.
+WARNING: The parameter "FixedKernelBSplineOrder", requested at entry number 3, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MovingKernelBSplineOrder", requested at entry number 3, does not exist at all.
+  The default value "3" is used instead.
+WARNING: The parameter "UseFastAndLowMemoryVersion", requested at entry number 3, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "UseJacobianPreconditioning", requested at entry number 3, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "FiniteDifferenceDerivative", requested at entry number 3, does not exist at all.
+  The default value "false" is used instead.
+WARNING: The parameter "SP_A", requested at entry number 3, does not exist at all.
+  The default value "20" is used instead.
+WARNING: The parameter "MaximumNumberOfSamplingAttempts", requested at entry number 3, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "SigmoidInitialTime", requested at entry number 3, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "MaxBandCovSize", requested at entry number 3, does not exist at all.
+  The default value "192" is used instead.
+WARNING: The parameter "NumberOfBandStructureSamples", requested at entry number 3, does not exist at all.
+  The default value "10" is used instead.
+WARNING: The parameter "UseAdaptiveStepSizes", requested at entry number 3, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "AutomaticParameterEstimation", requested at entry number 3, does not exist at all.
+  The default value "true" is used instead.
+WARNING: The parameter "MaximumStepLength", requested at entry number 3, does not exist at all.
+  The default value "1" is used instead.
+WARNING: The parameter "NumberOfGradientMeasurements", requested at entry number 3, does not exist at all.
+  The default value "0" is used instead.
+WARNING: The parameter "NumberOfJacobianMeasurements", requested at entry number 3, does not exist at all.
+  The default value "1000" is used instead.
+WARNING: The parameter "NumberOfSamplesForExactGradient", requested at entry number 3, does not exist at all.
+  The default value "100000" is used instead.
+Elastix initialization of all components (for this resolution) took: 5 ms.
+Initialization of AdvancedMattesMutualInformation metric took: 3 ms.
+Starting automatic parameter estimation for AdaptiveStochasticGradientDescent ...
+  Computing JacobianTerms ...
+  Estimated band size covariance matrix: 74
+  Used band size covariance matrix: 74
+  Computing the Jacobian terms took 0 Seconds
+  NumberOfGradientMeasurements to estimate sigma_i: 2
+  Sampling gradients ...
+  Sampling the gradients took 1 Seconds
+Automatic parameter estimation took 1 Seconds
+1:ItNr	2:Metric	3a:Time	3b:StepSize	4:||Gradient||	Time[ms]
+0	-0.855603	0.000000	242.930337	0.020301	793
+1	-0.855583	0.000000	242.930337	0.016895	11
+2	-0.850599	1.000000	231.888049	0.020293	11
+3	-0.834602	2.000000	221.805960	0.015425	11
+4	-0.847232	3.000000	212.564045	0.014223	11
+5	-0.880248	4.000000	204.061484	0.014971	10
+6	-0.855467	4.825699	197.537229	0.016528	11
+7	-0.867949	5.825698	190.173508	0.019053	11
+8	-0.820392	4.966132	196.468887	0.016118	11
+9	-0.874567	5.966126	189.183164	0.018213	10
+10	-0.838893	6.966126	182.418439	0.016456	10
+11	-0.842791	7.965890	176.122230	0.015728	11
+12	-0.871968	8.965890	170.244806	0.019522	11
+13	-0.872536	9.965889	164.746991	0.015171	11
+14	-0.855397	10.965889	159.593153	0.017229	11
+15	-0.864501	11.965888	154.751999	0.015194	10
+16	-0.867511	12.965888	150.195899	0.020594	10
+17	-0.876661	12.193113	153.692637	0.021109	11
+18	-0.870481	13.193113	149.197795	0.014573	11
+19	-0.878570	14.193113	144.958392	0.014329	11
+20	-0.845801	15.193113	140.953255	0.016932	11
+21	-0.873730	14.327075	144.408702	0.018916	11
+22	-0.876666	15.286514	140.590443	0.015023	11
+23	-0.876533	16.250608	136.951781	0.020684	10
+24	-0.857662	17.250608	133.371400	0.013463	11
+25	-0.885555	16.385211	136.458693	0.015166	11
+26	-0.884662	17.385211	132.903714	0.020930	10
+27	-0.876570	18.381161	129.542576	0.019190	11
+28	-0.866135	17.515123	132.455428	0.013759	10
+29	-0.892098	18.515099	129.103487	0.016146	10
+30	-0.911655	19.515088	125.916968	0.021478	10
+31	-0.878429	18.649050	128.667323	0.018105	10
+32	-0.891901	19.649050	125.502001	0.018003	11
+33	-0.896161	20.649050	122.488679	0.016490	11
+34	-0.883274	21.648479	119.618265	0.016830	10
+35	-0.903353	22.645080	116.886875	0.016305	11
+36	-0.885541	23.645080	114.268740	0.018822	10
+37	-0.882898	24.645080	111.765322	0.021230	11
+38	-0.904008	25.645080	109.369242	0.016129	11
+39	-0.894686	26.642233	107.080142	0.018169	10
+40	-0.925469	27.642233	104.878761	0.015988	11
+41	-0.894280	26.776194	106.779897	0.014360	11
+42	-0.891713	27.776193	104.590720	0.016910	10
+43	-0.889565	28.776193	102.489500	0.017434	11
+44	-0.918141	29.776113	100.471201	0.015530	10
+45	-0.899642	30.776112	98.530709	0.017366	11
+46	-0.914359	31.775077	96.665649	0.017628	10
+47	-0.898878	31.004282	98.098404	0.012988	11
+48	-0.917333	32.004279	96.247646	0.015588	11
+49	-0.928594	31.161976	97.801838	0.016563	11
+50	-0.912860	30.305097	99.435287	0.015094	11
+51	-0.903846	31.305097	97.534224	0.015250	11
+52	-0.898245	30.439059	99.176330	0.017586	10
+53	-0.912814	29.573020	100.874677	0.019108	11
+54	-0.910429	30.573020	98.918719	0.018887	11
+55	-0.874027	29.706989	100.608164	0.015827	11
+56	-0.915467	30.706989	98.662428	0.016515	11
+57	-0.886081	31.552745	97.074606	0.020724	11
+58	-0.892032	32.552745	95.261915	0.012026	10
+59	-0.908743	33.552745	93.515680	0.021862	11
+60	-0.882115	32.686707	95.024213	0.019238	11
+61	-0.884286	33.686707	93.286602	0.017478	11
+62	-0.911257	34.686707	91.611398	0.014293	11
+63	-0.907017	35.686705	89.995301	0.022046	10
+64	-0.899022	36.686705	88.435231	0.019315	10
+65	-0.900906	37.686705	86.928327	0.015726	11
+66	-0.869709	37.862192	86.669165	0.013796	11
+67	-0.888943	36.996154	87.963369	0.015773	11
+68	-0.905150	36.130129	89.296789	0.015158	10
+69	-0.929360	37.130129	87.760636	0.017255	11
+70	-0.897259	36.265070	89.086367	0.016669	10
+71	-0.883931	37.265070	87.557383	0.016434	11
+72	-0.920342	36.399032	88.878452	0.020330	11
+73	-0.897466	35.777621	89.851195	0.016600	10
+74	-0.925574	36.777621	88.296074	0.015494	10
+75	-0.908701	35.959843	89.563750	0.016312	11
+76	-0.921759	35.695516	89.981315	0.014208	11
+77	-0.918408	36.695499	88.421752	0.016377	11
+78	-0.902927	37.534331	87.154615	0.015603	11
+79	-0.903077	36.668293	88.463467	0.018150	11
+80	-0.917485	37.635456	87.004305	0.019327	11
+81	-0.911766	38.622160	85.564446	0.018531	11
+82	-0.901590	39.622160	84.153008	0.016046	11
+83	-0.933984	38.756121	85.372628	0.021411	11
+84	-0.914570	38.276519	86.063371	0.020142	11
+85	-0.912783	39.276519	84.635562	0.022791	11
+86	-0.929176	40.276519	83.254355	0.015551	10
+87	-0.927938	41.276519	81.917505	0.015387	10
+88	-0.895309	42.263224	80.639853	0.018452	10
+89	-0.923853	43.009411	79.699797	0.018575	10
+90	-0.911726	44.009411	78.473824	0.012504	11
+91	-0.899024	45.009411	77.284996	0.020397	11
+92	-0.922083	46.009396	76.131668	0.013484	11
+93	-0.897340	45.143357	77.128487	0.017837	10
+94	-0.901236	46.142091	75.981206	0.017722	10
+95	-0.924532	47.142091	74.866165	0.017112	11
+96	-0.936133	48.142081	73.783389	0.018423	11
+97	-0.896822	47.276053	74.719274	0.016934	11
+98	-0.905152	48.276053	73.640701	0.016868	11
+99	-0.900276	47.410014	74.572958	0.015171	11
+100	-0.905949	48.410014	73.498574	0.017215	11
+101	-0.929659	47.558442	74.411509	0.018104	10
+102	-0.907326	46.752310	75.296873	0.019742	11
+103	-0.902968	47.752310	74.201683	0.014083	11
+104	-0.918087	48.751518	73.138724	0.019161	11
+105	-0.919818	47.885480	74.058236	0.019744	10
+106	-0.891966	47.019441	75.001161	0.014714	11
+107	-0.923123	48.017058	73.917046	0.018500	11
+108	-0.943552	49.017058	72.861346	0.017080	11
+109	-0.912029	50.017058	71.835376	0.021550	11
+110	-0.916660	49.151019	72.722209	0.022889	11
+111	-0.918329	50.151019	71.700126	0.017694	10
+112	-0.887486	51.099158	70.757235	0.013299	10
+113	-0.926254	52.099158	69.789272	0.017940	11
+114	-0.904686	53.099158	68.847436	0.018037	10
+115	-0.940355	54.099158	67.930682	0.016904	11
+116	-0.932074	55.099158	67.038022	0.013690	11
+117	-0.883090	54.233120	67.809724	0.017841	11
+118	-0.905492	53.677941	68.313843	0.018534	11
+119	-0.901455	54.677941	67.411151	0.015961	11
+120	-0.900634	53.811902	68.191517	0.018302	11
+121	-0.893352	52.945905	68.990123	0.016499	10
+122	-0.896884	53.644637	68.344322	0.016494	11
+123	-0.913290	54.644636	67.440830	0.016163	11
+124	-0.908112	53.778598	68.221888	0.016930	11
+125	-0.928278	54.776140	67.323792	0.015552	11
+126	-0.939393	55.776140	66.446907	0.018212	11
+127	-0.934023	56.766845	65.600412	0.020909	11
+128	-0.917754	57.766845	64.767569	0.015207	11
+129	-0.939818	56.901193	65.487278	0.014431	11
+130	-0.931473	57.898703	64.659328	0.014766	11
+131	-0.911811	58.808688	63.922076	0.016145	11
+132	-0.935449	59.803376	63.135197	0.013582	11
+133	-0.935052	60.803375	62.363406	0.018420	10
+134	-0.939132	61.803375	61.610255	0.019932	11
+135	-0.947277	62.803375	60.875079	0.017903	11
+136	-0.915226	63.802694	60.157724	0.014724	11
+137	-0.919432	64.802694	59.456607	0.013387	10
+138	-0.915501	63.936655	60.062844	0.018708	10
+139	-0.915038	63.070706	60.681506	0.015064	11
+140	-0.939842	62.211655	61.307963	0.016116	11
+141	-0.935924	61.345616	61.952747	0.017957	10
+142	-0.890436	60.479577	62.611236	0.016959	11
+143	-0.924808	61.479577	61.852124	0.015729	11
+144	-0.937055	62.479577	61.111199	0.020225	11
+145	-0.910049	63.479577	60.387815	0.013473	11
+146	-0.946485	64.479577	59.681356	0.014597	10
+147	-0.913283	65.376399	59.061701	0.016464	10
+148	-0.920439	66.376399	58.385756	0.019272	10
+149	-0.916923	67.376361	57.725132	0.016685	10
+150	-0.931890	66.511910	58.295346	0.016216	11
+151	-0.925146	67.511910	57.636730	0.017398	11
+152	-0.925791	68.511910	56.992830	0.016752	10
+153	-0.894790	67.645871	57.549630	0.018566	11
+154	-0.946441	68.645871	56.907664	0.018198	11
+155	-0.943322	69.634805	56.286733	0.017876	11
+156	-0.912815	70.634798	55.672487	0.022744	11
+157	-0.944620	69.768759	56.203667	0.020279	11
+158	-0.948570	70.768759	55.591218	0.012370	11
+159	-0.910534	71.768759	54.991973	0.017349	10
+160	-0.909479	70.902720	55.510186	0.018018	10
+161	-0.923627	71.902633	54.912729	0.019712	10
+162	-0.938993	71.045869	55.423857	0.014230	11
+163	-0.944602	72.045869	54.828195	0.013366	11
+164	-0.938471	73.045869	54.245201	0.014622	11
+165	-0.932275	73.993658	53.703976	0.014202	11
+166	-0.911126	73.127744	54.198017	0.019525	11
+167	-0.928631	74.127744	53.628278	0.016298	11
+168	-0.933212	73.261706	54.120993	0.013921	11
+169	-0.935047	72.395667	54.622845	0.012891	11
+170	-0.923835	73.394373	54.044928	0.015958	11
+171	-0.918459	74.394372	53.478386	0.017770	10
+172	-0.912535	75.394366	52.923602	0.013280	11
+173	-0.936024	76.392176	52.381385	0.019323	11
+174	-0.954781	75.526138	52.851354	0.017891	10
+175	-0.913863	76.526138	52.309434	0.018581	11
+176	-0.945242	77.526138	51.778515	0.020234	11
+177	-0.923632	78.526138	51.258264	0.015192	10
+178	-0.923414	77.660099	51.708210	0.016313	11
+179	-0.904678	76.812932	52.156059	0.017187	10
+180	-0.918982	77.716016	51.678920	0.016696	10
+181	-0.949733	76.849979	52.136313	0.015168	11
+182	-0.922643	77.849979	51.608884	0.015347	11
+183	-0.939689	76.983997	52.065003	0.015835	10
+184	-0.942740	77.982971	51.539543	0.016357	11
+185	-0.928426	78.982970	51.024060	0.018940	11
+186	-0.928101	79.982970	50.518786	0.013086	10
+187	-0.922033	79.123866	50.952258	0.018351	11
+188	-0.926138	80.123668	50.448497	0.016160	11
+189	-0.935521	79.257630	50.884278	0.017699	11
+190	-0.953244	80.256430	50.382352	0.016826	11
+191	-0.932835	79.390391	50.816986	0.019751	10
+192	-0.910620	80.390391	50.315785	0.020315	10
+193	-0.951229	81.390391	49.824373	0.020933	11
+194	-0.911747	82.390391	49.342468	0.016064	10
+195	-0.906939	81.524352	49.759271	0.018843	10
+196	-0.921105	80.658314	50.183176	0.019702	11
+197	-0.922031	81.658314	49.694339	0.017372	10
+198	-0.948947	80.792275	50.117134	0.013129	11
+199	-0.942043	81.781987	49.634544	0.014872	11
+200	-0.952407	81.027077	50.001796	0.017600	11
+201	-0.934655	82.027076	49.516469	0.016888	11
+202	-0.914929	83.027076	49.040474	0.013609	11
+203	-0.892275	83.925458	48.620584	0.017754	11
+204	-0.932198	83.059419	49.025231	0.014607	10
+205	-0.916181	84.059419	48.558588	0.019675	11
+206	-0.929839	83.193390	48.962195	0.017886	11
+207	-0.930883	82.327721	49.372395	0.013658	10
+208	-0.933946	81.526089	49.758429	0.018472	11
+209	-0.960011	80.660315	50.182188	0.020003	11
+210	-0.942307	81.660315	49.693370	0.019471	10
+211	-0.915000	82.660315	49.213984	0.017925	11
+212	-0.935651	81.794277	49.628610	0.013496	10
+213	-0.945571	82.794277	49.150466	0.015178	10
+214	-0.923535	81.929288	49.563513	0.014615	11
+215	-0.936797	82.929288	49.086616	0.016279	11
+216	-0.934605	82.063432	49.499002	0.017815	11
+217	-0.894953	83.063432	49.023341	0.013587	11
+218	-0.936048	84.063432	48.556733	0.014133	10
+219	-0.954617	85.062953	48.099142	0.015240	10
+220	-0.931536	86.061634	47.650469	0.015537	10
+221	-0.951595	85.195595	48.039065	0.012778	11
+222	-0.934565	86.107358	47.630127	0.017137	11
+223	-0.940159	85.830231	47.753684	0.017550	11
+224	-0.952950	84.964253	48.143944	0.017877	10
+225	-0.935860	85.964210	47.693870	0.017029	10
+226	-0.946666	85.865343	47.737994	0.020170	10
+227	-0.918559	84.999304	48.128024	0.015856	11
+228	-0.965524	85.999304	47.678227	0.015881	11
+229	-0.947538	86.999304	47.236759	0.016896	11
+230	-0.945821	86.133266	47.618609	0.018330	10
+231	-0.954351	87.133266	47.178239	0.017614	11
+232	-0.942512	88.133263	46.745941	0.017062	10
+233	-0.941370	88.845280	46.442934	0.017042	11
+234	-0.937069	87.979242	46.812007	0.017390	11
+235	-0.930666	87.201645	47.148424	0.015752	11
+236	-0.940115	86.344710	47.524811	0.017375	11
+237	-0.949262	85.480293	47.910622	0.016017	10
+238	-0.921561	86.478654	47.465584	0.016702	10
+239	-0.916865	87.478654	47.028027	0.015900	10
+240	-0.950918	86.612616	47.406496	0.017070	11
+241	-0.946050	87.612616	46.970023	0.014386	11
+242	-0.940683	86.746577	47.347556	0.018857	11
+243	-0.954118	85.881791	47.730647	0.017113	11
+244	-0.952186	86.881791	47.288213	0.016812	10
+245	-0.932422	87.840674	46.871605	0.017512	10
+246	-0.928520	88.840674	46.444881	0.017525	10
+247	-0.938503	87.974635	46.813986	0.022180	11
+248	-0.924264	88.974635	46.388306	0.019020	11
+249	-0.941321	89.974635	45.970298	0.016702	11
+250	-0.935587	89.108597	46.331869	0.015234	11
+251	-0.935112	88.242558	46.699173	0.011654	11
+252	-0.942203	87.377893	47.071750	0.011358	10
+253	-0.944950	88.377885	46.641394	0.018445	10
+254	-0.924678	87.607462	46.972252	0.015832	11
+255	-0.931148	88.607462	46.543702	0.015689	11
+256	-0.962361	89.227868	46.281736	0.018703	10
+257	-0.934061	90.227867	45.865638	0.015246	10
+258	-0.944880	91.227867	45.456955	0.014043	10
+259	-0.962049	92.227866	45.055491	0.013376	10
+260	-0.937841	93.227866	44.661055	0.014829	10
+261	-0.937169	94.225364	44.274428	0.015280	11
+262	-0.935582	95.225364	43.893492	0.018902	11
+263	-0.920710	96.225364	43.519055	0.017005	11
+264	-0.934061	97.225364	43.150953	0.017444	10
+265	-0.935406	98.225363	42.789025	0.015837	11
+266	-0.917483	97.359372	43.102096	0.022195	10
+267	-0.912138	98.359372	42.740984	0.016080	11
+268	-0.920811	99.359372	42.385873	0.013852	11
+269	-0.940624	100.359364	42.036617	0.017067	10
+270	-0.945018	99.493460	42.338705	0.019469	10
+271	-0.930221	100.493460	41.990220	0.020653	10
+272	-0.901925	101.493460	41.647424	0.015380	10
+273	-0.964831	100.627422	41.943971	0.015871	10
+274	-0.967148	99.761383	42.244772	0.015735	11
+275	-0.963012	100.759135	41.898598	0.021847	11
+276	-0.938598	101.759135	41.557291	0.014172	11
+277	-0.959374	102.759135	41.221499	0.015630	10
+278	-0.940490	101.893096	41.511991	0.013146	11
+279	-0.928556	102.893096	41.176928	0.011729	11
+280	-0.941279	103.855973	40.859375	0.016137	11
+281	-0.932327	104.855973	40.534723	0.015393	11
+282	-0.958834	103.989935	40.815583	0.019174	11
+283	-0.948990	104.989935	40.491624	0.016400	11
+284	-0.986937	104.226035	40.738630	0.015415	11
+285	-0.942036	105.226035	40.415886	0.013639	11
+286	-0.955589	106.226035	40.098216	0.017682	10
+287	-0.931915	107.226035	39.785501	0.018867	11
+288	-0.948815	108.225997	39.477638	0.013314	11
+289	-0.940472	109.225997	39.174491	0.016302	10
+290	-0.953914	110.225981	38.875968	0.017861	10
+291	-0.928054	109.360028	39.134213	0.016462	10
+292	-0.951836	108.494099	39.395904	0.019586	10
+293	-0.930000	108.148344	39.501374	0.014803	10
+294	-0.951966	109.148344	39.197864	0.018844	11
+295	-0.934481	110.148344	38.898982	0.013919	11
+296	-0.936541	109.282306	39.157559	0.017077	10
+297	-0.959216	108.416315	39.419582	0.018167	10
+298	-0.931706	107.909736	39.574490	0.018027	10
+299	-0.915957	107.044593	39.841878	0.020705	11
+300	-0.935323	108.044593	39.533133	0.015122	11
+301	-0.934619	107.178555	39.800239	0.018689	11
+302	-0.962283	108.178554	39.492137	0.020480	11
+303	-0.940226	107.571451	39.678615	0.015289	10
+304	-0.934117	106.705422	39.947694	0.016463	11
+305	-0.948376	107.705422	39.637313	0.019586	10
+306	-0.957124	108.216203	39.480630	0.017529	10
+307	-0.958226	109.215621	39.177612	0.013491	11
+308	-0.943543	110.215621	38.879038	0.014228	11
+309	-0.914563	109.349969	39.137233	0.015266	11
+310	-0.918287	108.483938	39.398995	0.016359	11
+311	-0.926552	109.471186	39.100871	0.018447	10
+312	-0.945844	108.605292	39.362105	0.022982	10
+313	-0.945055	107.739253	39.626897	0.015553	10
+314	-0.906029	108.739253	39.321462	0.016164	10
+315	-0.923461	109.739253	39.020699	0.015307	11
+316	-0.939102	110.739253	38.724503	0.016454	11
+317	-0.967759	111.739253	38.432769	0.016984	11
+318	-0.934407	112.736703	38.146126	0.020696	11
+319	-0.928569	113.736703	37.863010	0.013915	11
+320	-0.973377	112.870664	38.107954	0.020222	11
+321	-0.965829	113.721606	37.867252	0.019373	11
+322	-0.938213	114.721606	37.588246	0.017757	10
+323	-0.933339	115.707173	37.317260	0.014123	10
+324	-0.942026	116.707173	37.046270	0.015583	11
+325	-0.970835	115.980552	37.242784	0.017321	10
+326	-0.960912	116.980552	36.972870	0.015256	11
+327	-0.960124	117.980552	36.706841	0.016802	11
+328	-0.938452	117.114514	36.937009	0.016310	10
+329	-0.938199	118.114514	36.671494	0.013347	11
+330	-0.965626	119.114475	36.409779	0.014889	10
+331	-0.951197	120.114475	36.151763	0.016722	11
+332	-0.950024	120.562013	36.037472	0.017795	11
+333	-0.935756	121.561760	35.784751	0.021870	11
+334	-0.940181	122.561760	35.535487	0.018105	11
+335	-0.975423	123.561760	35.289672	0.016796	11
+336	-0.963935	122.695745	35.502353	0.014903	10
+337	-0.953212	123.695291	35.257105	0.014342	10
+338	-0.943397	122.829253	35.469399	0.011354	10
+339	-0.957735	123.829252	35.224494	0.018361	11
+340	-0.911416	122.963213	35.436393	0.016500	11
+341	-0.948499	123.963213	35.191943	0.017411	11
+342	-0.943632	124.963213	34.950841	0.016826	10
+343	-0.962560	125.963213	34.713021	0.014070	10
+344	-0.939620	125.097175	34.918794	0.017540	10
+345	-0.944768	124.231136	35.127020	0.013847	10
+346	-0.936730	123.365115	35.337741	0.012733	11
+347	-0.934242	122.499076	35.551010	0.017398	11
+348	-0.929542	123.499067	35.304983	0.016520	11
+349	-0.939376	122.633029	35.517855	0.017092	11
+350	-0.923131	123.633029	35.272283	0.016826	10
+351	-0.940585	124.633029	35.030083	0.014617	10
+352	-0.950445	125.633029	34.791187	0.020693	11
+353	-0.958859	126.633029	34.555527	0.014887	11
+354	-0.950296	127.633028	34.323038	0.014587	11
+355	-0.937176	128.522557	34.118846	0.019758	10
+356	-0.938405	129.522557	33.892177	0.013910	10
+357	-0.926138	128.656519	34.088305	0.016712	11
+358	-0.964372	127.791202	34.286551	0.019060	10
+359	-0.960666	127.071367	34.453231	0.018679	11
+360	-0.979889	128.071321	34.222123	0.018286	11
+361	-0.945425	129.071321	33.994084	0.018234	10
+362	-0.946027	130.071321	33.769064	0.013979	10
+363	-0.946946	129.205282	33.963766	0.021209	11
+364	-0.934699	128.339256	34.160724	0.014974	10
+365	-0.961383	129.334678	33.934533	0.017985	10
+366	-0.970068	128.527019	34.117828	0.018720	11
+367	-0.961926	128.540267	34.114805	0.017733	11
+368	-0.884957	127.674229	34.313526	0.017589	11
+369	-0.949258	128.674229	34.084272	0.015648	11
+370	-0.958544	129.674164	33.858075	0.011770	10
+371	-0.953628	128.808134	34.053806	0.017535	11
+372	-0.930451	129.808134	33.827997	0.017990	10
+373	-0.956145	130.808134	33.605163	0.019550	11
+374	-0.936679	131.808134	33.385246	0.016440	11
+375	-0.944795	132.808134	33.168188	0.017909	10
+376	-0.948689	131.942095	33.356004	0.015854	11
+377	-0.946179	132.942095	33.139325	0.015025	10
+378	-0.964292	133.942095	32.925443	0.018745	11
+379	-0.965200	133.076057	33.110512	0.020064	11
+380	-0.952492	133.571078	33.004474	0.014845	11
+381	-0.952019	132.705141	33.190413	0.015101	11
+382	-0.943075	131.839105	33.378480	0.019548	11
+383	-0.959192	132.839085	33.161515	0.014384	10
+384	-0.941700	133.839085	32.947347	0.017388	11
+385	-0.964452	134.834025	32.736991	0.018173	11
+386	-0.962531	135.834025	32.528255	0.011498	11
+387	-0.967416	134.967986	32.708873	0.015671	11
+388	-0.924598	135.405557	32.617364	0.015932	11
+389	-0.963563	134.539519	32.798977	0.015179	10
+390	-0.934855	135.539519	32.589452	0.012522	10
+391	-0.982989	136.539511	32.382588	0.016233	11
+392	-0.940085	137.528019	32.180665	0.015932	10
+393	-0.938853	136.667116	32.356380	0.018141	11
+394	-0.935558	137.667116	32.152454	0.018970	11
+395	-0.961130	138.518319	31.980885	0.021244	11
+396	-0.931097	139.518319	31.781650	0.015906	11
+397	-0.928109	140.518319	31.584882	0.017512	10
+398	-0.912256	141.518318	31.390536	0.016101	11
+399	-0.929966	140.652280	31.558708	0.017116	11
+400	-0.900238	141.650149	31.365093	0.013962	11
+401	-0.947036	142.650149	31.173434	0.017735	10
+402	-0.920711	143.134715	31.081402	0.016163	10
+403	-0.951839	144.134715	30.893184	0.020366	11
+404	-0.953736	145.134714	30.707231	0.018699	10
+405	-0.952718	146.134714	30.523504	0.017976	11
+406	-0.971551	147.134714	30.341962	0.020469	11
+407	-0.951147	147.849855	30.213453	0.019236	10
+408	-0.942067	148.845426	30.036352	0.018002	10
+409	-0.978332	147.979616	30.190251	0.019084	11
+410	-0.950594	148.979616	30.012640	0.018400	10
+411	-0.955792	149.979616	29.837107	0.016117	11
+412	-0.935473	150.979616	29.663615	0.017131	11
+413	-0.988904	151.979616	29.492129	0.018109	11
+414	-0.938351	151.114009	29.640452	0.016076	10
+415	-0.935531	150.249540	29.790078	0.012541	11
+416	-0.960336	149.402224	29.938207	0.015424	10
+417	-0.956361	150.398283	29.764225	0.018197	11
+418	-0.921269	151.398283	29.591577	0.012978	10
+419	-0.958304	152.385702	29.423055	0.014741	11
+420	-0.924687	151.519810	29.570732	0.015397	11
+421	-0.962200	150.653842	29.719912	0.012377	10
+422	-0.958749	149.787803	29.870617	0.016503	10
+423	-0.979770	150.490546	29.748212	0.016097	10
+424	-0.937038	151.490539	29.575750	0.020501	10
+425	-0.943099	152.490539	29.405275	0.017549	11
+426	-0.975939	153.489051	29.237004	0.019644	11
+427	-0.936440	152.623012	29.382839	0.021399	11
+428	-0.952822	151.756974	29.530137	0.017283	10
+429	-0.952351	152.756974	29.360186	0.015247	11
+430	-0.965175	153.756974	29.192180	0.014927	11
+431	-0.978237	154.756971	29.026087	0.019360	11
+432	-0.954076	155.756971	28.861872	0.019771	11
+433	-0.941721	156.756971	28.699505	0.021857	11
+434	-0.953380	155.890932	28.840015	0.014866	10
+435	-0.955150	155.024894	28.981907	0.018840	10
+436	-0.940137	154.178568	29.121925	0.014475	10
+437	-0.949024	155.178568	28.956627	0.014112	10
+438	-0.976482	156.178099	28.793271	0.021037	10
+439	-0.931726	155.320769	28.933274	0.016796	11
+440	-0.981426	156.320769	28.770105	0.017743	11
+441	-0.928886	155.457696	28.910822	0.018835	10
+442	-0.941997	156.457696	28.747905	0.015307	11
+443	-0.948406	157.457696	28.586815	0.015046	11
+444	-0.923980	156.593859	28.725864	0.020228	11
+445	-0.983151	157.593859	28.565020	0.021775	11
+446	-0.957793	158.593859	28.405966	0.016651	11
+447	-0.948416	157.727820	28.543609	0.015713	11
+448	-0.966843	158.727820	28.384794	0.016804	11
+449	-0.951565	157.949581	28.508237	0.014820	11
+450	-0.959205	158.949581	28.349814	0.017247	10
+451	-0.938175	159.949581	28.193141	0.013691	10
+452	-0.946581	159.083566	28.328721	0.017775	11
+453	-0.960282	158.520248	28.417614	0.015547	10
+454	-0.918008	159.520248	28.260193	0.014393	11
+455	-0.927035	160.520137	28.104524	0.017273	10
+456	-0.962795	161.520137	27.950544	0.012755	10
+457	-0.949877	162.517714	27.798608	0.017177	10
+458	-0.948304	161.651676	27.930415	0.015186	11
+459	-0.945801	160.785637	28.063477	0.019459	11
+460	-0.976831	161.785637	27.909945	0.017488	11
+461	-0.942436	162.785637	27.758084	0.018039	10
+462	-0.943166	161.919958	27.889450	0.014544	10
+463	-0.939806	162.919958	27.737811	0.019268	10
+464	-0.951997	162.554537	27.793032	0.013692	11
+465	-0.951675	161.688508	27.924784	0.017805	11
+466	-0.968005	162.688508	27.772761	0.016399	11
+467	-0.963145	163.688508	27.622385	0.016217	10
+468	-0.919322	164.684509	27.474220	0.016956	11
+469	-0.957283	163.818471	27.602961	0.017905	11
+470	-0.957021	162.978373	27.729004	0.015510	10
+471	-0.949871	163.970315	27.580302	0.018267	11
+472	-0.953335	163.104276	27.710041	0.014293	11
+473	-0.947206	164.104276	27.560342	0.016647	10
+474	-0.943570	165.104276	27.412251	0.018930	10
+475	-0.955799	166.098692	27.266557	0.016037	10
+476	-0.929564	167.098692	27.121598	0.018684	10
+477	-0.938343	166.232654	27.247048	0.014296	11
+478	-0.938107	167.232650	27.102296	0.013336	11
+479	-0.974913	166.575364	27.197266	0.017958	11
+480	-0.967458	167.575364	27.053041	0.019456	10
+481	-0.928947	168.575364	26.910338	0.017300	10
+482	-0.947737	169.564357	26.770678	0.012226	10
+483	-0.945791	170.564357	26.630930	0.014124	11
+484	-0.964253	171.393118	26.516214	0.016011	11
+485	-0.945916	170.527080	26.636114	0.018506	11
+486	-0.939018	169.661043	26.757103	0.014386	11
+487	-0.955068	168.795004	26.879196	0.016111	10
+488	-0.940224	168.093500	26.978913	0.015421	11
+489	-0.950878	169.092457	26.837136	0.015641	11
+490	-0.955286	170.089058	26.697170	0.013782	11
+491	-0.914755	169.225608	26.818351	0.019146	11
+492	-0.949667	170.225608	26.678106	0.014579	11
+493	-0.950368	169.360224	26.799386	0.017421	11
+494	-0.971458	168.494188	26.921866	0.015429	11
+495	-0.920549	169.367421	26.798373	0.019662	11
+496	-0.976233	170.367421	26.658336	0.021820	11
+497	-0.952176	171.367421	26.519756	0.018587	10
+498	-0.959623	172.367421	26.382609	0.018686	11
+499	-0.961614	171.501382	26.501301	0.014226	11
+Time spent in resolution 3 (ITK initialisation and iterating): 6.327 s.
+Stopping condition: Maximum number of iterations has been reached.
+Settings of AdaptiveStochasticGradientDescent in resolution 3:
+( SP_a 5101.537076 )
+( SP_A 20.000000 )
+( SP_alpha 1.000000 )
+( SigmoidMax 1.000000 )
+( SigmoidMin -0.866039 )
+( SigmoidScale 0.000002 )
+
+
+
+=============== start of TransformParameterFile ===============
+(Transform "BSplineTransform")
+(NumberOfParameters 722)
+(TransformParameters -3.118606 -3.783877 -3.702015 -3.452785 -3.067065 -2.661524 -2.283367 -1.848973 -1.281039 -0.863772 -0.889184 -1.212842 -1.684741 -2.152296 -2.499273 -2.759309 -2.969152 -3.054992 -2.523301 -3.783557 -4.776590 -4.721006 -4.490918 -3.883302 -3.330127 -3.084830 -2.706878 -1.946682 -1.261733 -0.695603 -0.606177 -1.568020 -2.683000 -3.353510 -3.788838 -4.228595 -4.401866 -3.510755 -3.744557 -4.884407 -4.957835 -4.717925 -3.948465 -3.245140 -3.166727 -4.098964 -3.353510 -3.076298 -1.742248 -0.296061 -1.502124 -2.772371 -3.597079 -4.082091 -4.636270 -4.784107 -3.829616 -3.476464 -4.972727 -5.512546 -5.587496 -4.650393 -3.230933 -0.346910 -2.838285 -4.606824 -1.273659 -1.689756 -0.316327 -1.611026 -2.359070 -3.226885 -3.872382 -4.625274 -5.017098 -4.123079 -2.912639 -4.871264 -6.362283 -7.559104 -7.129900 -5.889388 -5.004248 0.812387 -1.431807 -7.227752 -3.752514 3.037582 1.965295 -1.748078 -2.088023 -2.729522 -4.152683 -5.108166 -4.311792 -2.103273 -4.324666 -6.604760 -8.620363 -8.955464 -5.432233 -0.484697 0.169978 0.440146 -5.186559 2.675808 3.269963 -1.081263 -1.511476 -0.853290 -1.678411 -3.464757 -4.982896 -4.331412 -1.059069 -2.863118 -4.902466 -6.617734 -6.579189 -7.397066 3.231757 4.030867 -0.061086 3.049752 5.954719 -7.309276 -6.764375 0.253927 2.685105 -0.112727 -2.641683 -4.329916 -4.031027 0.074587 -1.041803 -2.325711 -3.937268 -3.768748 -3.718373 0.806566 0.761487 -3.434613 1.034302 2.825792 -2.117932 -2.225131 3.550212 -0.844659 -1.053177 -1.782742 -3.625274 -3.651174 1.166351 0.679985 0.079187 -2.737898 -1.672877 2.333412 -0.663496 -0.347893 -2.480672 -6.607813 -3.781786 1.178240 2.913990 4.117083 2.073598 0.575428 -0.623400 -2.782112 -3.353077 2.089200 1.842922 1.399583 0.282576 2.698961 -4.517737 -3.487480 -3.489158 -4.841278 -4.736647 -1.730804 1.217982 2.314462 0.207237 7.278400 3.212589 -0.296890 -2.519202 -3.280420 2.724211 2.008676 0.710399 -3.728325 -2.170355 1.007298 -1.491226 -1.591970 3.253018 4.095461 -1.212038 1.273857 -2.004415 3.175186 -1.022622 -5.472297 -2.098477 -3.438644 -3.571899 3.135690 2.063224 0.068371 -3.451741 1.344963 4.079576 -1.540961 3.830460 4.657862 -3.257932 -2.923838 2.413495 -1.994373 0.023414 -0.480339 -1.342482 -4.279108 -4.826339 -4.077265 3.366167 2.681143 1.233724 -0.664297 -1.697263 0.777578 -2.224361 -0.239544 -1.196930 -3.238736 -1.918150 -0.443145 -4.371505 -2.996396 -5.082981 -3.180903 -6.288589 -6.126220 -4.657115 3.494141 3.377135 2.886933 2.392679 2.187402 2.681321 -0.467084 -2.317966 0.508045 1.519206 -5.144452 -2.870148 -1.195064 1.404090 -4.018400 -7.357626 -7.547758 -7.042931 -5.148490 3.625228 3.736673 3.610107 3.235067 2.083683 -0.072051 2.292474 1.828517 0.286792 1.772827 -4.214062 -3.064991 -2.301201 3.006665 -1.724688 -6.288434 -7.277266 -7.206804 -5.370842 3.770607 4.024978 3.801015 3.516569 2.819114 1.394191 0.277024 0.919269 -0.637849 0.351796 -2.478215 -4.493114 -5.380194 -2.905535 -2.941751 -5.317649 -6.570621 -6.891476 -5.359056 3.864496 4.322609 4.000398 3.645149 3.056804 1.838074 0.945282 0.312594 -0.327911 -1.027300 -3.258823 -5.185345 -4.945577 -4.050215 -4.708515 -5.938799 -6.617350 -6.683453 -5.117721 3.834620 4.322331 4.044285 3.680923 3.109749 2.138849 1.053632 0.067914 -0.824779 -2.035367 -3.932937 -5.605585 -6.133744 -6.249326 -6.575031 -6.789031 -6.691521 -6.429996 -4.793483 2.987324 3.242606 3.083022 2.755963 2.237716 1.496244 0.497127 -0.614663 -1.721169 -2.802818 -3.828435 -4.750344 -5.522022 -6.004489 -6.024950 -5.782322 -5.445314 -5.085745 -3.767937 0.102334 0.793746 1.225701 1.760326 2.251955 2.722273 3.197341 3.695883 4.266842 4.384359 3.560053 2.654872 2.502794 2.622137 2.553339 2.394515 2.220904 2.053243 1.488724 -1.123982 -0.735734 -0.272948 0.448289 1.247342 1.952122 2.605652 3.447130 4.867234 4.978953 3.422092 1.383786 1.227741 1.708846 1.776658 1.753362 1.743467 1.674769 1.271848 -1.825807 -1.805754 -1.489133 -0.841979 0.087555 0.781996 1.023145 -0.480757 3.380506 1.188882 2.047907 -0.803765 0.521047 0.632192 0.909320 1.173514 1.388622 1.294132 0.994531 -2.664286 -3.182140 -3.081461 -2.689364 -1.815424 -0.755426 3.096141 -3.400862 -0.725492 1.921453 0.257322 -0.764524 1.075250 -1.041383 -0.442446 0.177371 0.522686 0.599205 0.566209 -3.409116 -4.472062 -4.865514 -4.942681 -4.197259 -4.368333 -1.924799 2.979342 -2.195776 -5.721066 -4.463766 5.260115 1.702885 -2.770618 -2.277744 -1.550923 -0.759832 -0.288045 0.037586 -3.991653 -5.384810 -6.040035 -6.437193 -6.024732 -5.000959 -1.123413 1.370786 1.532348 -3.247400 3.640851 5.093298 0.094036 -0.409343 -3.046492 -2.553811 -1.804627 -1.101916 -0.590119 -4.275258 -5.538696 -6.014160 -6.123586 -5.377425 -4.483297 5.104097 4.776315 3.882755 5.052289 4.530176 -4.458786 -5.853914 1.871322 -1.792507 -2.762821 -2.582521 -1.901248 -1.306748 -4.333306 -5.128101 -5.167090 -4.527230 -2.742494 -2.094304 2.941534 2.164540 -1.901662 2.745599 2.186199 -1.606194 -1.719020 4.059249 1.323225 -1.607441 -2.650463 -2.457248 -2.058821 -4.242738 -4.365917 -3.703136 -2.742050 -0.153081 0.876853 0.278450 1.350300 -2.449487 -7.119591 -3.971556 1.520291 4.896037 4.727419 2.052524 -0.950220 -2.581948 -2.892412 -2.769637 -4.078038 -3.632891 -2.400203 -1.356055 -0.382695 -1.637062 -1.737356 0.118781 0.551990 -1.171694 -1.209855 1.722942 1.886089 3.015430 1.093124 -1.287134 -2.880059 -3.597741 -3.430773 -3.891535 -3.200901 -1.970396 -0.799069 -0.724303 1.295927 0.035339 0.288960 6.124784 4.081822 0.628512 1.519227 -2.694594 2.074570 1.047532 -2.304923 -3.280512 -4.045003 -3.962496 -3.690708 -2.898700 -1.856073 -0.365220 0.841957 3.902252 -0.192844 2.184760 4.851223 -1.976810 -1.615225 2.830536 -0.910989 1.971646 1.089122 -1.088562 -3.807682 -4.611027 -4.410480 -3.529807 -2.819750 -1.944735 -0.506920 1.733062 2.089447 4.110357 4.203431 -0.117643 -2.573673 -1.429664 -0.225009 -4.996781 -2.104984 -3.571377 -2.456794 -4.399012 -5.098877 -4.770268 -3.373940 -2.830841 -2.089845 -0.889149 1.231913 1.557089 0.552710 2.051669 1.945810 1.150736 -2.874163 -1.134779 0.981923 2.954154 -1.008083 -4.033268 -5.111390 -5.691209 -5.056103 -3.201920 -2.842112 -2.304773 -1.103953 1.377163 5.080266 2.337027 1.221852 3.634154 2.023084 -3.779871 -1.543258 -3.064653 0.537153 -1.847288 -4.515982 -5.440885 -5.847973 -5.198020 -3.033559 -2.878743 -2.603836 -1.685776 0.568024 2.783657 3.706670 3.576476 -4.964470 5.407377 2.444286 -0.394138 -5.882684 -7.602105 -5.844476 -5.758409 -5.752185 -6.009684 -5.254784 -2.844968 -2.900835 -2.753910 -2.279227 -0.742897 0.318142 -0.559189 -0.512227 -1.655346 2.799564 3.178977 0.743118 -3.700952 -6.737654 -6.861933 -6.583069 -6.424872 -6.331025 -5.187461 -2.657034 -2.935174 -2.871632 -2.662079 -1.901928 -1.314395 -1.802278 -1.899733 -0.152737 1.447356 1.246768 -0.610272 -3.829328 -6.462424 -6.928496 -6.578993 -6.435169 -6.202134 -4.981563 -1.918189 -2.303103 -2.378135 -2.399543 -2.279678 -2.110041 -1.964089 -1.648138 -0.963220 -0.456072 -0.650476 -1.520737 -3.039420 -4.410482 -4.901952 -4.921409 -4.837628 -4.673003 -3.819326)
+(InitialTransformParametersFileName "NoInitialTransform")
+(HowToCombineTransforms "Compose")
+
+// Image specific
+(FixedImageDimension 2)
+(MovingImageDimension 2)
+(FixedInternalImagePixelType "float")
+(MovingInternalImagePixelType "float")
+(Size 256 256)
+(Index 0 0)
+(Spacing 1.0000000000 1.0000000000)
+(Origin 0.0000000000 0.0000000000)
+(Direction 1.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(UseDirectionCosines "true")
+
+// BSplineTransform specific
+(GridSize 19 19)
+(GridIndex 0 0)
+(GridSpacing 16.0000000000 16.0000000000)
+(GridOrigin -16.5000000000 -16.5000000000)
+(GridDirection 1.0000000000 0.0000000000 0.0000000000 1.0000000000)
+(BSplineTransformSplineOrder 3)
+(UseCyclicTransform "false")
+
+// ResampleInterpolator specific
+(ResampleInterpolator "FinalBSplineInterpolator")
+(FinalBSplineInterpolationOrder 3)
+
+// Resampler specific
+(Resampler "DefaultResampler")
+(DefaultPixelValue 0.000000)
+(ResultImageFormat "mhd")
+(ResultImagePixelType "short")
+(CompressResultImage "false")
+
+=============== end of TransformParameterFile ===============
+
+Applying final transform ...
+  Applying final transform took 0 s.
+
+Final metric value  = -0.961614
+Settings of AdaptiveStochasticGradientDescent for all resolutions:
+( SP_a 3399.605716 6221.935021 4712.881039 5101.537076 )
+( SP_A 20.000000 20.000000 20.000000 20.000000 )
+( SP_alpha 1.000000 1.000000 1.000000 1.000000 )
+( SigmoidMax 1.000000 1.000000 1.000000 1.000000 )
+( SigmoidMin -0.107194 -0.232543 -0.767326 -0.866039 )
+( SigmoidScale 0.000000 0.000000 0.000002 0.000002 )
+
+Time spent on saving the results, applying the final transform etc.: 185 ms.
+Running elastix with parameter file 0: "parameters_BSpline.txt", has finished.
+
+
+Current time: Fri Feb  4 13:38:18 2011.
+Time used for running elastix with this parameter file: 23 Seconds.
+
+-------------------------------------------------------------------------
+
+Total time elapsed: 23 Seconds.
+
